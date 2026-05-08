@@ -1,4 +1,4 @@
-# Specgen Workspace
+# Specgen
 
 เครื่องมือสำหรับสร้างและตรวจสอบ Workflow Template (รองรับ JSON, Markdown+XML และ TOML)
 
