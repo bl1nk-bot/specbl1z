@@ -24,7 +24,12 @@ specgen list-templates
 specgen generate <TEMPLATE_ID> --var "Key=Value" --out output.md
 ```
 
-### 3. ตรวจสอบความถูกต้องของเทมเพลต (Validate)
+### 3. สร้างเทมเพลตใหม่ (New)
+```bash
+specgen new <TEMPLATE_ID> --format <json|md|toml>
+```
+
+### 4. ตรวจสอบความถูกต้องของเทมเพลต (Validate)
 ```bash
 specgen validate templates/spec-workflow.md
 ```

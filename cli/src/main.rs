@@ -40,6 +40,14 @@ enum Commands {
     },
     /// List available templates (by ID)
     ListTemplates,
+    /// Create a new template from boilerplate
+    New {
+        /// Name of the template (ID)
+        name: String,
+        /// Template format (json|md|toml)
+        #[arg(long, default_value = "md", value_parser = ["json", "md", "toml"])]
+        format: String,
+    },
     /// Show schema info
     Schema,
 }
@@ -179,6 +187,59 @@ fn main() -> Result<()> {
             } else {
                 anyhow::bail!("templates/ directory not found");
             }
+        }
+        Commands::New { name, format } => {
+            let dir = "templates";
+            if !Path::new(dir).exists() {
+                std::fs::create_dir(dir).with_context(|| format!("Failed to create {} directory", dir))?;
+            }
+            let path = format!("{}/{}.{}", dir, name, format);
+            if Path::new(&path).exists() {
+                anyhow::bail!("Template '{}' already exists at {}", name, path);
+            }
+            let boilerplate = match format.as_str() {
+                "json" => r##"{
+  "workflow": {
+    "title": "New Workflow",
+    "steps": [
+      { "id": "0", "critical": true, "content": "First step" }
+    ]
+  },
+  "output_template": {
+    "format": "markdown",
+    "content": "# New Output\nHello, {{name}}!"
+  }
+}"##,
+                "toml" => r##"[workflow]
+title = "New Workflow"
+
+[[workflow.steps]]
+id = "0"
+critical = true
+content = "First step"
+
+[output_template]
+format = "markdown"
+content = """
+# New Output
+Hello, {{name}}!
+"""
+"##,
+                "md" => r##"<workflow title="New Workflow">
+<step id="0" critical="true">
+First step
+</step>
+<output_template format="markdown">
+# New Output
+Hello, {{name}}!
+</output_template>
+</workflow>
+"##,
+                _ => unreachable!(),
+            };
+            std::fs::write(&path, boilerplate)
+                .with_context(|| format!("Failed to create template {}", path))?;
+            println!("Created new {} template: {}", format, path);
         }
         Commands::Schema => {
             println!("Schema: schema/template_schema.json");

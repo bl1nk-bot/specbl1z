@@ -7,9 +7,9 @@
 - [x] **Quality:** กำจัด Warnings ทั้งหมด (Unused imports/variables)
 - [x] **Testing:** แก้ไข Integration Tests ให้ผ่าน 100%
 - [x] **Format:** จัดรูปแบบโค้ดด้วย `cargo fmt`
-- [x] **Docs:** สร้าง `README.md` และ `TODO.md` เบื้องต้น
+- [x] **Docs:** สร้าง `README.md`, `TODO.md` และ `LICENSE` (MIT)
+- [x] **Feature:** เพิ่มคำสั่ง `new` สำหรับสร้างเทมเพลตใหม่
 
 ## งานที่รอการดำเนินการ (Future Tasks) ⏳
-- [ ] เพิ่มคำสั่ง `new-template` สำหรับสร้างไฟล์เทมเพลตเริ่มต้น
 - [ ] พัฒนาตัวเลือก `--format` ให้รองรับการบันทึกเป็น JSON/YAML นอกเหนือจาก Markdown
 - [ ] เพิ่มการรองรับ Custom Helper ใน Template Engine
