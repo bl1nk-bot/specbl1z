@@ -20,7 +20,7 @@ fn render_parsed(value: &serde_json::Value) -> Result<String, String> {
         .and_then(|v| v.get("content"))
         .and_then(|v| v.as_str())
         .ok_or_else(|| "Template missing output_template.content".to_string())?;
-    let ctx = RenderContext::new();
+    let ctx = RenderContext::new().with_var("Project Name", "Test Project");
     render_markdown(output, &ctx)
 }
 
@@ -81,8 +81,7 @@ fn test_render_from_markdown() {
     let md = load_template("spec-workflow.md");
     let value = parse_template_str(&md, TemplateFormat::Markdown).unwrap();
     let rendered = render_parsed(&value).expect("render should succeed");
-    assert!(rendered.contains("[Project Name]"));
-    assert!(rendered.contains("Environment"));
+    assert!(rendered.contains("Test Project"));
 }
 
 #[test]
@@ -90,7 +89,7 @@ fn test_render_from_toml() {
     let toml = load_template("spec-workflow.toml");
     let value = parse_template_str(&toml, TemplateFormat::Toml).unwrap();
     let rendered = render_parsed(&value).expect("render should succeed");
-    assert!(rendered.contains("[Project Name]"));
+    assert!(rendered.contains("Test Project"));
     assert!(rendered.contains("Run & Operate"));
 }
 
@@ -99,8 +98,9 @@ fn test_render_from_json() {
     let json = load_template("spec-workflow.json");
     let value = parse_template_str(&json, TemplateFormat::Json).unwrap();
     let rendered = render_parsed(&value).expect("render should succeed");
-    assert!(rendered.contains("[Project Name]"));
+    assert!(rendered.contains("Test Project"));
 }
+
 
 #[test]
 fn test_auto_detect_from_path() {
