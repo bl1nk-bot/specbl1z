@@ -1,0 +1,13 @@
+[package]
+name = "specgen-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+jsonschema = "0.18"
+colored = "2"  # for colored output in validator
+regex = "1"
+toml = "0.8"
+quick-xml = { version = "0.37", features = ["escape-html"] }

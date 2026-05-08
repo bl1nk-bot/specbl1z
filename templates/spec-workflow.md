@@ -1,0 +1,158 @@
+<workflow title="การจัดการไฟล์ SPEC.md" restart="0">
+<rules>
+คำสั่งนี้ต้องทำทุกครั้งที่เริ่มรอบการทำงานใหม่  
+หากขั้นตอนไม่ถูกระบุ → ไม่ต้องทำ  
+หากเจอเงื่อนไขที่ไม่สามารถไปต่อได้ → ต้องหยุดและถามคำแนะนำทันที  
+Critical: ขั้นตอนที่มีเครื่องหมาย Critical ต้องทำอย่างเคร่งครัด ห้ามข้าม
+</rules>
+<step id="0" critical="true">
+**Step 0: ตรวจสอบ Git Directory**
+- รัน `git rev-parse --is-inside-work-tree`
+- ถ้าเป็น Git directory → ไป Step 1
+- ถ้าไม่ใช่ Git directory → ไป Step 1A
+</step>
+<step id="1" critical="true">
+**Step 1: ตรวจสอบโครงสร้างโปรเจกต์**
+- รัน `ls -R` หรือ `tree`
+- บันทึกโครงสร้างลง SPEC.md โดยต้องใส่ว่าแต่ละโฟลเดอร์ใช้ทำอะไร เช่น:
+  - docs/* → เอกสาร
+  - scripts/* → สคริปต์
+  - src/* → source code
+  - tests/* → ไฟล์ทดสอบ
+  - config/* → ไฟล์ตั้งค่า
+  - assets/* → รูปภาพ/สื่อประกอบ
+  - data/* → ข้อมูลดิบ
+- ตรวจสอบไฟล์สำคัญ:
+  - .gitignore → บันทึกสิ่งที่ ignore
+  - .env → บันทึก environment variables ถ้ามี
+  - .editorconfig, .prettierrc, .eslintrc → บันทึก config ถ้ามี
+  - Manifest (package.json, cargo.toml, requirements.txt) → บันทึก dependencies
+- ถ้าไฟล์หรือโฟลเดอร์ไม่พบ → บันทึกว่า “ไม่มี” ลง SPEC.md
+</step>
+<step id="1A" critical="true">
+**Step 1A: ตรวจสอบโครงสร้างโปรเจกต์ที่ไม่ใช่งานโค้ดดิ้ง**
+- รัน `ls -R` หรือ `tree`
+- บันทึกโครงสร้างลง SPEC.md โดยต้องใส่ว่าแต่ละโฟลเดอร์ใช้ทำอะไร เช่น:
+  - docs/* → รายงาน/บทความ
+  - assets/* → รูปภาพ/สื่อประกอบ
+  - data/* → ข้อมูลดิบ
+- ตรวจสอบไฟล์สำคัญ:
+  - .gitignore → บันทึกสิ่งที่ ignore ถ้ามี
+  - ไฟล์ config (.editorconfig, .prettierrc) → บันทึกถ้ามี
+- ถ้าไม่มี → บันทึกว่า “ไม่มี” ลง SPEC.md
+</step>
+<step id="2" critical="true">
+**Step 2: ตรวจสอบโค้ด**
+- เปิดไฟล์ entry point เช่น src/index.js, main.py
+- รันไฟล์ด้วยคำสั่งจริง (node, python3, cargo build)
+- ถ้า error → บันทึก Symptom + Line Reference ลง SPEC.md
+- ถ้าไม่มีโค้ด → บันทึกว่า “ไม่มีโค้ด”
+- ตรวจสอบไฟล์ทดสอบ (tests/*) → รัน npm test, pytest, หรือ cargo test แล้วบันทึกผล
+</step>
+<step id="3" critical="true">
+**Step 3: ตรวจสอบสภาพแวดล้อม (Environment & OS Check)**
+- ตรวจสอบ OS และเวอร์ชัน
+- ตรวจสอบ Shell/CLI
+- ตรวจสอบ Node.js และตำแหน่งไฟล์ (which node หรือ where node)
+- ตรวจสอบเครื่องมืออื่น ๆ เช่น Python, Rust, Git, Docker
+- ถ้าไม่พบ → บันทึกว่า “ไม่มี” ลง SPEC.md
+</step>
+<step id="4" critical="true">
+**Step 4: Plan Mode & Permission**
+- สรุปสิ่งที่ตรวจพบ (โครงสร้าง, โค้ด, OS, Tools, SPEC.md เดิม)
+- ถ้ามี SPEC.md เดิม → เตรียมอัปเดต
+- ถ้าไม่มี SPEC.md → เตรียมสร้างใหม่
+- ถ้าเป็นโปรเจกต์ใหม่และข้อมูลไม่พอ → ตั้งคำถามกลับ
+- ขออนุญาตผู้ใช้ก่อนเขียนหรือแก้ไข SPEC.md
+- ถ้าไม่ได้รับอนุญาต → หยุด
+</step>
+<step id="5" critical="true">
+**Step 5: Execution (Exit Plan Mode)**
+- ถ้าได้รับอนุญาต:
+  - สร้าง SPEC.md ใหม่ตามเทมเพลต
+  - หรือ อัปเดต SPEC.md เดิม
+- ถ้า error → บันทึกลง SPEC.md พร้อม Line Reference
+</step>
+<step id="6" critical="true">
+**Step 6: Issues & Troubleshooting**
+- ทุกปัญหาต้องบันทึกลง SPEC.md:
+  - Symptom
+  - Line Reference
+  - Possible Cause
+  - Resolution
+  - Recommendations
+- ถ้าแก้ไขไม่ได้ทันที → บันทึกว่า “ยังไม่แก้ไข”
+</step>
+<loop_restart>
+**รอบใหม่ (Loop Restart)**
+- เริ่มใหม่ที่ Step 0
+- ถ้าแก้ไขแล้ว → ย้ายไป Resolved Issues Archive หรือ ลบออก
+- Commit การเปลี่ยนแปลงใน Version Control พร้อมข้อความชัดเจน
+</loop_restart>
+<output_template format="markdown">
+[Project Name]
+
+[ระบุชื่อโปรเจกต์ที่นี่ และเขียนคำอธิบายสั้นๆ 1 ประยocinว่าแอปพลิเคชันนี้ทำอะไรและมีประโยชน์อย่างไรสำหรับผู้ใช้]
+
+Environment
+- OS: [ระบุ OS และเวอร์ชันที่ตรวจพบ]
+- Shell/CLI: [เช่น Bash 5.2, Zsh 5.9]
+- Tools Installed: 
+  - Node.js vXX (ตำแหน่ง: [ผลลัพธ์จาก which/where]) 
+  - npm vXX 
+  - Python vXX 
+  - Rust vXX 
+  - Git vXX 
+  - Docker vXX 
+  - Others: [...]
+
+Run & Operate
+- [คำสั่งสำหรับรัน Development Mode] — [อธิบายส่วนที่รัน เช่น API หรือ Frontend]
+- [คำสั่งสำหรับ Build] — [อธิบายขั้นตอนการ Build โปรเจกต์]
+- [คำสั่งสำหรับการจัดการฐานข้อมูล] — [อธิบายวิธีการจัดการ Schema หรือ Migration]
+- Required env: [ระบุชื่อ Environment Variables ที่จำเป็น] — [เช่น Database URL, API Keys]
+
+Stack
+- Runtime/Language: [...]
+- Framework: [...]
+- Database: [...]
+- ORM/Query Builder: [...]
+- Others: [...]
+
+Where things live
+[ระบุตำแหน่งไฟล์สำคัญที่เป็น Source of Truth เช่น ไฟล์กำหนด Schema ฐานข้อมูล, ไฟล์สัญญา API หรือไฟล์ตั้งค่าหลัก]
+
+Architecture decisions
+[ระบุการตัดสินใจในการออกแบบระบบที่สำคัญ เช่น การเลือกใช้ Architecture แบบใด หรือเหตุผลเบื้องหลังการเลือกใช้เทคโนโลยีนั้นๆ]
+
+Product
+[อธิบายฟีเจอร์หลักหรือความสามารถของแอปพลิเคชันในมุมมองของผู้ใช้งาน]
+
+User preferences
+[บันทึกความต้องการพิเศษหรือคำสั่งเฉพาะจากผู้ใช้ที่ต้องคำนึงถึงในการพัฒนา]
+
+Gotchas
+[ระบุข้อควรระวัง จุดที่มักเกิดข้อผิดพลาดได้ง่าย หรือลำดับขั้นตอนสำคัญที่ต้องทำตามอย่างเคร่งครัด]
+
+Issues & Troubleshooting
+- [ชื่อปัญหา]  
+  - Symptom: [อธิบายอาการ]  
+  - Line Reference: [ไฟล์และบรรทัดที่เกิดปัญหา เช่น src/index.js:42]  
+  - Possible Cause: [สาเหตุที่คาดว่าเป็นไปได้]  
+  - Resolution: [แนวทางแก้ไขที่ใช้แล้วหรือแนะนำ]  
+  - Recommendations: [ข้อเสนอแนะเพิ่มเติม เช่น ปรับ config, ใช้เวอร์ชันอื่น]  
+
+Resolved Issues Archive
+- [ชื่อปัญหาที่แก้ไขแล้ว]  
+  - Resolved on: [วันที่]  
+  - Resolution: [วิธีแก้ไขที่ใช้จริง]  
+  - Note: [บริบทเพิ่มเติม เช่น สาเหตุที่แท้จริงหรือสิ่งที่ควรระวังในอนาคต]
+
+Pointers
+- [ระบุตำแหน่งไฟล์ที่ Frequently touch]
+
+---
+
+*Generated by specgen — edit as needed*
+</output_template>
+</workflow>
