@@ -31,16 +31,33 @@ pub fn render_markdown(template: &str, ctx: &RenderContext) -> Result<String, St
     let mut out = resolve_optional_blocks(template, ctx)?;
     // Phase 2: resolve each blocks
     out = resolve_each_blocks(&out, ctx)?;
-    // Phase 3: required placeholders
+    // Phase 3: required placeholders and helpers
     let re_req = Regex::new(r"\{\{([^?#/][^}]*)\}\}").map_err(|e| e.to_string())?;
     let mut repl: Vec<(usize, usize, String)> = Vec::new();
     for cap in re_req.captures_iter(&out) {
         let full = cap.get(0).unwrap();
-        let key = cap.get(1).unwrap().as_str().trim();
-        let val = ctx
-            .get(key)
-            .ok_or_else(|| format!("Missing required variable: '{}'", key))?
-            .to_string();
+        let token = cap.get(1).unwrap().as_str().trim();
+
+        let parts: Vec<&str> = token.split_whitespace().collect();
+        let val = if parts.len() > 1 && ["uppercase", "lowercase", "trim"].contains(&parts[0]) {
+            // Helper call: helper_name arg
+            let helper = parts[0];
+            let key = parts[1];
+            let base_val = ctx
+                .get(key)
+                .ok_or_else(|| format!("Missing variable for helper '{}': '{}'", helper, key))?;
+
+            match helper {
+                "uppercase" => base_val.to_uppercase(),
+                "lowercase" => base_val.to_lowercase(),
+                "trim" => base_val.trim().to_string(),
+                _ => unreachable!(),
+            }
+        } else {
+            ctx.get(token)
+                .ok_or_else(|| format!("Missing required variable: '{}'", token))?
+                .to_string()
+        };
         repl.push((full.start(), full.end(), val));
     }
     for (s, e, v) in repl.into_iter().rev() {
@@ -298,5 +315,18 @@ mod tests {
             .with_var("inner", r#"[{"name":"X"}]"#);
         let out = render_markdown(tpl, &ctx).unwrap();
         assert_eq!(out, "[AB][C]");
+    }
+
+    #[test]
+    fn test_helpers() {
+        let tpl = "{{uppercase name}} | {{lowercase city}} | {{trim spaced}}";
+        let ctx = RenderContext::new()
+            .with_var("name", "bob")
+            .with_var("city", "PARIS")
+            .with_var("spaced", "  word  ");
+        assert_eq!(
+            render_markdown(tpl, &ctx).unwrap(),
+            "BOB | paris | word"
+        );
     }
 }

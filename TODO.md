@@ -9,7 +9,10 @@
 - [x] **Format:** จัดรูปแบบโค้ดด้วย `cargo fmt`
 - [x] **Docs:** สร้าง `README.md`, `TODO.md` และ `LICENSE` (MIT)
 - [x] **Feature:** เพิ่มคำสั่ง `new` สำหรับสร้างเทมเพลตใหม่
+- [x] **Feature:** เพิ่มระบบ Helpers (`uppercase`, `lowercase`, `trim`) ใน Template Engine
+- [x] **Feature:** รองรับ Output Format (JSON/YAML) ในคำสั่ง `generate`
 
 ## งานที่รอการดำเนินการ (Future Tasks) ⏳
-- [ ] พัฒนาตัวเลือก `--format` ให้รองรับการบันทึกเป็น JSON/YAML นอกเหนือจาก Markdown
-- [ ] เพิ่มการรองรับ Custom Helper ใน Template Engine
+- [ ] เพิ่มความสามารถในการลงทะเบียน Custom Helper ภายนอก
+- [ ] พัฒนา Dashboard สำหรับดูรายการเทมเพลตผ่าน Web (Tauri/Wry)
+- [ ] เพิ่มระบบ Plugin สำหรับเชื่อมต่อกับ LLM API โดยตรง

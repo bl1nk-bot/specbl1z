@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Context, Result};
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use specgen_core::{
     parse_template, render_markdown, validate_template, RenderContext, TemplateFormat,
 };
@@ -28,9 +28,12 @@ enum Commands {
     Generate {
         /// Template ID (name without extension) or path to template file
         template: String,
-        /// Override format (json|md|toml)
+        /// Override input format (json|md|toml)
         #[arg(long, value_parser = ["json", "md", "toml"])]
         format: Option<String>,
+        /// Output format (markdown|json|yaml)
+        #[arg(long, value_enum, default_value_t = OutputFormat::Markdown)]
+        output_format: OutputFormat,
         /// Output file path (stdout if omitted)
         #[arg(short, long)]
         out: Option<String>,
@@ -50,6 +53,13 @@ enum Commands {
     },
     /// Show schema info
     Schema,
+}
+
+#[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
+enum OutputFormat {
+    Markdown,
+    Json,
+    Yaml,
 }
 
 fn parse_keyval(s: &str) -> Result<(String, String), String> {
@@ -90,19 +100,17 @@ fn main() -> Result<()> {
         Commands::Generate {
             template,
             format,
+            output_format,
             out,
             var,
         } => {
             // Determine template file path
             let template_path = if template.contains('.') {
-                // Assume it's a file path (relative or absolute)
                 template
             } else {
-                // If format explicitly provided, use that extension directly
                 if let Some(ref fmt) = format {
                     format!("templates/{}.{}", template, fmt)
                 } else {
-                    // Search in templates/ directory with supported extensions
                     let extensions = ["json", "md", "toml"];
                     let mut found = None;
                     for ext in &extensions {
@@ -124,7 +132,6 @@ fn main() -> Result<()> {
                 }
             };
 
-            // Override format if provided explicitly
             let fmt_opt = format.map(|f| match f.as_str() {
                 "json" => TemplateFormat::Json,
                 "md" => TemplateFormat::Markdown,
@@ -132,7 +139,7 @@ fn main() -> Result<()> {
                 _ => unreachable!(),
             });
 
-            let template_value = parse_template(&template_path, fmt_opt)
+            let mut template_value = parse_template(&template_path, fmt_opt)
                 .map_err(|e| anyhow!("Failed to load template '{}': {}", template_path, e))?;
 
             let ctx = var
@@ -146,14 +153,26 @@ fn main() -> Result<()> {
             let rendered =
                 render_markdown(content, &ctx).map_err(|e| anyhow!("Render error: {}", e))?;
 
+            let final_output = match output_format {
+                OutputFormat::Markdown => rendered,
+                OutputFormat::Json => {
+                    template_value["output_template"]["content"] = serde_json::Value::String(rendered);
+                    serde_json::to_string_pretty(&template_value)?
+                }
+                OutputFormat::Yaml => {
+                    template_value["output_template"]["content"] = serde_json::Value::String(rendered);
+                    serde_yaml::to_string(&template_value)?
+                }
+            };
+
             match out {
                 Some(path) => {
-                    std::fs::write(&path, &rendered)
+                    std::fs::write(&path, &final_output)
                         .with_context(|| format!("Failed to write {}", path))?;
                     println!("Output written to {}", path);
                 }
                 None => {
-                    println!("{}", rendered);
+                    println!("{}", final_output);
                 }
             }
         }
