@@ -12,6 +12,8 @@ pub mod db;
 pub mod memory;
 pub mod models;
 pub mod rules_engine;
+pub mod sync;
+pub mod task_delegator;
 use serde_json::{Map, Value};
 
 // Re-export key types for consumers

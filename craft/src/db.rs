@@ -57,6 +57,7 @@ pub fn add_property(
 }
 
 /// รายชื่อเอกสารทั้งหมด
+#[allow(dead_code)]
 pub fn list_documents(conn: &Connection) -> Result<Vec<String>> {
     let mut stmt = conn.prepare("SELECT title FROM documents")?;
     let rows = stmt.query_map([], |row| row.get(0))?;

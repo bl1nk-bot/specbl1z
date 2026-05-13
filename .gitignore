@@ -26,3 +26,6 @@ dist/
 # Secrets
 .env
 .env.*
+
+# Generated reports
+duplicates_report.json

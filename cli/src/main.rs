@@ -2,6 +2,7 @@ use anyhow::{anyhow, Context, Result};
 use clap::{Parser, Subcommand, ValueEnum};
 use specgen_core::{
     parse_template, render_markdown, validate_template, RenderContext, TemplateFormat,
+    task_delegator::TaskStatus,
 };
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -73,11 +74,34 @@ enum Commands {
         cmd: AgentCommands,
     },
     /// Index the current project for semantic search
-    Index,
+    Index {
+        /// Run in background
+        #[arg(short, long)]
+        background: bool,
+    },
     /// Search for code logic using semantic search
     Search {
         /// The query to search for
         query: String,
+    },
+    /// Task delegation and scheduling
+    Task {
+        #[command(subcommand)]
+        cmd: TaskCommands,
+    },
+    /// Synchronize local changes with remote cloud
+    Sync {
+        /// Cloud endpoint URL
+        #[arg(long, env = "KILOCODE_URL")]
+        endpoint: Option<String>,
+        /// Push local changes to cloud
+        #[arg(long)]
+        push: bool,
+    },
+    /// Setup and manage scheduled jobs (Cron)
+    Cron {
+        #[command(subcommand)]
+        cmd: CronCommands,
     },
     /// Show system health and status
     Status {
@@ -126,6 +150,54 @@ enum MemoryCommands {
         #[arg(long)]
         value: String,
     },
+}
+
+#[derive(Subcommand)]
+enum TaskCommands {
+    /// Add a new delegated task
+    Add {
+        /// Task title
+        title: String,
+        /// Schedule (e.g. "daily 08:00")
+        #[arg(long)]
+        schedule: Option<String>,
+        /// Repeat rule (e.g. "1d")
+        #[arg(long)]
+        repeat: Option<String>,
+        /// Database file path (default: craft.db)
+        #[arg(short, long, default_value = "craft.db")]
+        database: String,
+    },
+    /// List all tasks
+    List {
+        /// Database file path (default: craft.db)
+        #[arg(short, long, default_value = "craft.db")]
+        database: String,
+    },
+    /// Start a task worker (runs in background)
+    Worker {
+        /// Database file path (default: craft.db)
+        #[arg(short, long, default_value = "craft.db")]
+        database: String,
+        /// Polling interval in seconds
+        #[arg(long, default_value = "30")]
+        interval: u64,
+    },
+}
+
+#[derive(Subcommand)]
+enum CronCommands {
+    /// Schedule a daily job
+    Add {
+        /// Command to run
+        command: String,
+        /// Time in HH:MM format
+        time: String,
+    },
+    /// List all scheduled jobs
+    List,
+    /// Remove all jobs
+    Clear,
 }
 
 #[derive(Subcommand)]
@@ -596,15 +668,221 @@ Hello, {{name}}!
                 }
             }
         },
-        Commands::Index => {
+        Commands::Index { background } => {
             let root = std::env::current_dir()?;
-            let sense = specgen_core::sense::CodeSense::new(&root)?;
-            sense.index(&root)?;
+            if background {
+                let bin = std::env::current_exe()?;
+                let log_file = root.join("index.log");
+                let command = format!(
+                    "{} index > {} 2>&1 && termux-notification --title 'Specgen' --content 'Code indexing complete! 🔍'",
+                    bin.display(),
+                    log_file.display()
+                );
+                println!("🚀 Starting indexing in background. Log: {}", log_file.display());
+                std::process::Command::new("bash")
+                    .arg("-c")
+                    .arg(command)
+                    .spawn()?;
+            } else {
+                let sense = specgen_core::sense::CodeSense::new(&root)?;
+                sense.index(&root)?;
+            }
         }
         Commands::Search { query } => {
             let root = std::env::current_dir()?;
             let sense = specgen_core::sense::CodeSense::new(&root)?;
             sense.search(&query)?;
+        }
+        Commands::Task { cmd } => match cmd {
+            TaskCommands::Add {
+                title,
+                schedule,
+                repeat,
+                database,
+            } => {
+                let delegator = specgen_core::task_delegator::TaskDelegator::new(&database)?;
+                let id = delegator.add_task(&title, schedule.as_deref(), repeat.as_deref())?;
+                println!("✅ Task added (ID: {})", id);
+            }
+            TaskCommands::List { database } => {
+                let delegator = specgen_core::task_delegator::TaskDelegator::new(&database)?;
+                let tasks = delegator.list_tasks()?;
+                println!("Delegated Tasks in `{}`:", database);
+                for t in tasks {
+                    println!(" [{}] {} - {}", t.status, t.title, t.created_at);
+                    if let Some(s) = t.schedule {
+                        println!("    Schedule: {}", s);
+                    }
+                }
+            }
+            TaskCommands::Worker { database, interval } => {
+                use std::time::{SystemTime, UNIX_EPOCH};
+                println!("👷 Task Worker started for `{}`", database);
+                println!("Interval: {}s (Ctrl+C to stop)", interval);
+                let delegator = specgen_core::task_delegator::TaskDelegator::new(&database)?;
+                loop {
+                    let tasks = delegator.list_tasks()?;
+                    let pending: Vec<_> = tasks.iter().filter(|t| t.status == "todo").collect();
+                    
+                    if !pending.is_empty() {
+                        println!("🔄 Found {} pending tasks. Processing...", pending.len());
+                    }
+                    
+                    for task in pending.iter() {
+                        println!("  → Running: {} (ID: {})", task.title, task.id);
+                        
+                        // Mark as in_progress
+                        if let Err(e) = delegator.update_status(&task.id, TaskStatus::InProgress) {
+                            println!("  ⚠️  Failed to update status: {}", e);
+                            continue;
+                        }
+                        
+                        // Execute the task as a shell command
+                        let output = std::process::Command::new("sh")
+                            .arg("-c")
+                            .arg(&task.title)
+                            .output();
+                        
+                        let result = match output {
+                            Ok(out) => {
+                                let stdout = String::from_utf8_lossy(&out.stdout);
+                                let stderr = String::from_utf8_lossy(&out.stderr);
+                                let success = out.status.success();
+                                
+                                println!("  Status: {}", if success { "✅ done" } else { "❌ failed" });
+                                if !stdout.is_empty() {
+                                    println!("  stdout: {}", stdout.trim());
+                                }
+                                if !stderr.is_empty() {
+                                    println!("  stderr: {}", stderr.trim());
+                                }
+                                
+                                success
+                            }
+                            Err(e) => {
+                                println!("  ❌ Execution error: {}", e);
+                                false
+                            }
+                        };
+                        
+                        // Update final status
+                        let final_status = if result {
+                            TaskStatus::Done
+                        } else {
+                            TaskStatus::Failed
+                        };
+                        if let Err(e) = delegator.update_status(&task.id, final_status) {
+                            println!("  ⚠️  Failed to update final status: {}", e);
+                        }
+                    }
+                    
+                    std::thread::sleep(std::time::Duration::from_secs(interval));
+                }
+            }
+        },
+        Commands::Sync { endpoint, push } => {
+            let root = std::env::current_dir()?;
+            if push {
+                println!("📦 Preparing local changes for sync...");
+                let patch = specgen_core::sync::SyncManager::prepare_patch(&root)?;
+                if patch.is_empty() {
+                    println!("✨ No changes to sync.");
+                } else {
+                    println!("🚀 Pushing patch to remote: {}", endpoint.as_deref().unwrap_or("Kilocode Gateway"));
+                    let result = specgen_core::sync::SyncManager::send_patch(&patch, endpoint.as_deref())?;
+                    println!("✅ Sync packet sent. Server response:");
+                    println!("{}", serde_json::to_string_pretty(&result).unwrap_or_default());
+                }
+            }
+        },
+        Commands::Cron { cmd } => match cmd {
+            CronCommands::Add { command, time } => {
+                // Validate time format HH:MM
+                let parts: Vec<&str> = time.split(':').collect();
+                if parts.len() != 2 {
+                    anyhow::bail!("Invalid time format. Use HH:MM");
+                }
+                let hour = parts[0];
+                let min = parts[1];
+                if hour.parse::<u32>().is_err() || min.parse::<u32>().is_err() {
+                    anyhow::bail!("Hour and minute must be numbers");
+                }
+                let cron_entry = format!("{} {} * * * {}", min, hour, command);
+
+                // Read existing crontab
+                let existing = match std::process::Command::new("crontab")
+                    .arg("-l")
+                    .output()
+                {
+                    Ok(out) => {
+                        let s = String::from_utf8_lossy(&out.stdout);
+                        if out.status.success() { s.to_string() } else { "".to_string() }
+                    }
+                    Err(_) => "".to_string(),
+                };
+
+                // Check duplicates
+                if existing.lines().any(|line| line.trim() == cron_entry) {
+                    anyhow::bail!("This cron entry already exists");
+                }
+
+                // Append new entry
+                let mut new_crontab = existing;
+                if !new_crontab.is_empty() && !new_crontab.ends_with('\n') {
+                    new_crontab.push('\n');
+                }
+                new_crontab.push_str(&cron_entry);
+                new_crontab.push('\n');
+
+                // Install new crontab
+                let mut child = std::process::Command::new("crontab")
+                    .arg("-")
+                    .stdin(std::process::Stdio::piped())
+                    .spawn()
+                    .context("Failed to spawn crontab")?;
+                {
+                    let stdin = child.stdin.as_mut().unwrap();
+                    std::io::Write::write_all(stdin, new_crontab.as_bytes())?;
+                }
+                let status = child.wait()?;
+                if status.success() {
+                    println!("✅ Cron job installed: '{}' at {} (min hour)", command, time);
+                } else {
+                    anyhow::bail!("crontab installation failed");
+                }
+            }
+            CronCommands::List => {
+                let output = std::process::Command::new("crontab")
+                    .arg("-l")
+                    .output()
+                    .context("Failed to read crontab")?;
+                if output.status.success() {
+                    let text = String::from_utf8_lossy(&output.stdout);
+                    if text.trim().is_empty() {
+                        println!("📭 Crontab is empty");
+                    } else {
+                        println!("📋 Current crontab:");
+                        println!("{}", text);
+                    }
+                } else {
+                    anyhow::bail!("crontab -l failed (no crontab?)");
+                }
+            }
+            CronCommands::Clear => {
+                print!("⚠️  Remove all cron jobs? (y/N): ");
+                std::io::Write::flush(&mut std::io::stdout())?;
+                let mut input = String::new();
+                std::io::stdin().read_line(&mut input)?;
+                if input.trim().eq_ignore_ascii_case("y") {
+                    std::process::Command::new("crontab")
+                        .arg("-r")
+                        .status()
+                        .context("Failed to clear crontab")?;
+                    println!("🗑️  All cron jobs removed");
+                } else {
+                    println!("Cancelled.");
+                }
+            }
         }
         Commands::Status { database } => {
             println!("📊 Project Status");

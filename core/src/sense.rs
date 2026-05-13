@@ -7,7 +7,8 @@ use std::path::Path;
 
 const OLLAMA_API: &str = "http://localhost:11434/api/embeddings";
 const MODEL: &str = "qwen3-embedding:0.6b";
-const DB_NAME: &str = ".specgen_sense.db";
+const SENSE_DIR: &str = ".sense";
+const DB_NAME: &str = "codesense.db";
 
 #[derive(Serialize, Deserialize, Debug)]
 struct EmbeddingResponse {
@@ -22,7 +23,12 @@ pub struct CodeSense {
 
 impl CodeSense {
     pub fn new(root_dir: &Path) -> Result<Self> {
-        let db_path = root_dir.join(DB_NAME);
+        let sense_path = root_dir.join(SENSE_DIR);
+        if !sense_path.exists() {
+            std::fs::create_dir_all(&sense_path)?;
+        }
+        
+        let db_path = sense_path.join(DB_NAME);
         let db = Connection::open(db_path)?;
         let client = Client::new();
         let project_name = root_dir

@@ -1773,6 +1773,7 @@ dependencies = [
  "sqlite-vec",
  "tempfile",
  "toml",
+ "uuid",
 ]
 
 [[package]]
