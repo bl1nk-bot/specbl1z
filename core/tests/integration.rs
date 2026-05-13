@@ -101,7 +101,6 @@ fn test_render_from_json() {
     assert!(rendered.contains("Test Project"));
 }
 
-
 #[test]
 fn test_auto_detect_from_path() {
     let md_path = std::path::Path::new("../templates/spec-workflow.md");

@@ -1,0 +1,463 @@
+{
+  "critical_fixes": [],
+  "ai_analysis": [
+    {
+      "number": 102,
+      "score": 30,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (medium): +10",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/102"
+    },
+    {
+      "number": 101,
+      "score": 30,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (medium): +10",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/101"
+    },
+    {
+      "number": 99,
+      "score": 30,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (medium): +10",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/99"
+    },
+    {
+      "number": 98,
+      "score": 40,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (high): +20",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/98"
+    },
+    {
+      "number": 97,
+      "score": 30,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (medium): +10",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/97"
+    },
+    {
+      "number": 96,
+      "score": 30,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (medium): +10",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/96"
+    },
+    {
+      "number": 95,
+      "score": 30,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (medium): +10",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/95"
+    },
+    {
+      "number": 94,
+      "score": 30,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (medium): +10",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/94"
+    },
+    {
+      "number": 93,
+      "score": 30,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (medium): +10",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/93"
+    },
+    {
+      "number": 92,
+      "score": 30,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (medium): +10",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/92"
+    },
+    {
+      "number": 91,
+      "score": 30,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (medium): +10",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/91"
+    },
+    {
+      "number": 89,
+      "score": 40,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (high): +20",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/89"
+    },
+    {
+      "number": 88,
+      "score": 30,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (medium): +10",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/88"
+    },
+    {
+      "number": 87,
+      "score": 30,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (medium): +10",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/87"
+    },
+    {
+      "number": 86,
+      "score": 30,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (medium): +10",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/86"
+    },
+    {
+      "number": 85,
+      "score": 40,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (high): +20",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/85"
+    },
+    {
+      "number": 84,
+      "score": 30,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (medium): +10",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/84"
+    },
+    {
+      "number": 83,
+      "score": 30,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (medium): +10",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/83"
+    },
+    {
+      "number": 81,
+      "score": 30,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (medium): +10",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/81"
+    },
+    {
+      "number": 80,
+      "score": 30,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (medium): +10",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/80"
+    },
+    {
+      "number": 79,
+      "score": 30,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (medium): +10",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/79"
+    },
+    {
+      "number": 78,
+      "score": 40,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (high): +20",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/78"
+    },
+    {
+      "number": 77,
+      "score": 40,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (high): +20",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/77"
+    },
+    {
+      "number": 76,
+      "score": 30,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (medium): +10",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/76"
+    },
+    {
+      "number": 75,
+      "score": 40,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (high): +20",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/75"
+    },
+    {
+      "number": 74,
+      "score": 40,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (high): +20",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/74"
+    },
+    {
+      "number": 73,
+      "score": 30,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (medium): +10",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/73"
+    },
+    {
+      "number": 72,
+      "score": 40,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (high): +20",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/72"
+    },
+    {
+      "number": 71,
+      "score": 30,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (medium): +10",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/71"
+    },
+    {
+      "number": 70,
+      "score": 30,
+      "path": "unknown",
+      "reason": [
+        "Base Severity (medium): +10",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/dependabot/70"
+    }
+  ],
+  "dismissed_slop": [
+    {
+      "number": 8,
+      "score": 20,
+      "path": "src/lib/plugins/media-generators/fal.ts",
+      "reason": [
+        "Base Severity (warning): +0",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/code-scanning/8"
+    },
+    {
+      "number": 7,
+      "score": 20,
+      "path": "src/lib/webhook.ts",
+      "reason": [
+        "Base Severity (warning): +0",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/code-scanning/7"
+    },
+    {
+      "number": 6,
+      "score": 20,
+      "path": "src/components/ide/utils.ts",
+      "reason": [
+        "Base Severity (warning): +0",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/code-scanning/6"
+    },
+    {
+      "number": 5,
+      "score": 20,
+      "path": "src/components/api/improve-prompt-demo.tsx",
+      "reason": [
+        "Base Severity (warning): +0",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/code-scanning/5"
+    },
+    {
+      "number": 4,
+      "score": 20,
+      "path": "src/__tests__/lib/webhook.test.ts",
+      "reason": [
+        "Base Severity (warning): +0",
+        "Slop in Example/Test: -0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/code-scanning/4"
+    },
+    {
+      "number": 3,
+      "score": 20,
+      "path": "src/lib/similarity.ts",
+      "reason": [
+        "Base Severity (warning): +0",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/code-scanning/3"
+    },
+    {
+      "number": 2,
+      "score": 20,
+      "path": ".github/workflows/security.yml",
+      "reason": [
+        "Base Severity (warning): +0",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/code-scanning/2"
+    },
+    {
+      "number": 1,
+      "score": 20,
+      "path": ".github/workflows/project-automation.yml",
+      "reason": [
+        "Base Severity (warning): +0",
+        "Slop in Source: +0",
+        "File not found for slop analysis",
+        "Public Exposure: +20"
+      ],
+      "url": "https://github.com/bl1nk-bot/agent-library/security/code-scanning/1"
+    }
+  ]
+}

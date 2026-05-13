@@ -324,9 +324,6 @@ mod tests {
             .with_var("name", "bob")
             .with_var("city", "PARIS")
             .with_var("spaced", "  word  ");
-        assert_eq!(
-            render_markdown(tpl, &ctx).unwrap(),
-            "BOB | paris | word"
-        );
+        assert_eq!(render_markdown(tpl, &ctx).unwrap(), "BOB | paris | word");
     }
 }

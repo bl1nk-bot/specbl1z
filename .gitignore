@@ -1,4 +1,5 @@
 /target
+# Cargo.lock - Generally tracked for binary apps, but following current preference
 Cargo.lock
 
 # IDEs
@@ -10,3 +11,18 @@ Cargo.lock
 # OS
 .DS_Store
 Thumbs.db
+
+# Databases & Persistence
+craft.db
+*.db-shm
+*.db-wal
+.sense/
+
+# Node.js
+node_modules/
+dist/
+*.log
+
+# Secrets
+.env
+.env.*

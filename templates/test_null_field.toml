@@ -1,0 +1,21 @@
+[workflow]
+title = "Workflow with Optional Next Step"
+restart = "0"
+
+[[workflow.steps]]
+id = "step_a"
+critical = true
+content = "This step has no explicit 'next' field."
+
+[[workflow.steps]]
+id = "step_b"
+critical = false
+content = "This step explicitly points to 'step_c'."
+next = "step_c"
+
+[output_template]
+format = "markdown"
+content = """
+# Test Output
+This is a test template.
+"""

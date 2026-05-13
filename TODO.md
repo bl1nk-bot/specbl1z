@@ -1,5 +1,6 @@
 # Specgen TODO
 
+<<<<<<< HEAD
 ## งานที่เสร็จสมบูรณ์แล้ว ✅
 - [x] Cleanup: ลบโฟลเดอร์ซ้อนและเปลี่ยนชื่อโปรเจกต์เป็น `specgen`
 - [x] Core: เลือกใช้ `renderer.rs` และ `validator.rs` เวอร์ชันที่สมบูรณ์ที่สุด
@@ -230,3 +231,43 @@
 - ต้องตรวจผลลัพธ์ของทุก command / script ที่รัน
 - ถ้าคำสั่งใด fail ให้หยุดและรายงานทันที
 - ทุกไฟล์ที่สร้างต้องสอดคล้องกับ PLAN.md และ schema ที่เกี่ยวข้อง
+=======
+## งานที่เสร็จสมบูรณ์แล้ว ✅ (Checkpoint: 2024-05-19)
+- [x] **Cleanup:** ลบโฟลเดอร์ซ้อนและเปลี่ยนชื่อโปรเจกต์เป็น `specgen`
+- [x] **Core:** เลือกใช้ `renderer.rs` และ `validator.rs` เวอร์ชันที่สมบูรณ์ที่สุด
+- [x] **Config:** อัปเดต `Cargo.toml` เป็น `resolver = "2"` (Rust 2021)
+- [x] **Quality:** กำจัด Warnings ทั้งหมด (Clippy passed 100%)
+- [x] **Testing:** แก้ไข Integration & Unit Tests ให้ผ่าน 100% (46 unit, 9 integration)
+- [x] **Format:** จัดรูปแบบโค้ดด้วย `cargo fmt`
+- [x] **Docs:** สร้าง `README.md`, `TODO.md`, `LICENSE`, และตั้งค่า `.gitignore` ให้ครอบคลุม
+- [x] **Feature:** เพิ่มคำสั่ง `new` สำหรับสร้างเทมเพลตใหม่
+- [x] **Feature:** เพิ่มระบบ Helpers (`uppercase`, `lowercase`, `trim`) ใน Template Engine
+- [x] **Feature:** รองรับ Output Format (JSON/YAML) ในคำสั่ง `generate`
+- [x] **Feature:** เพิ่มคำสั่ง `convert` สำหรับแปลงรูปแบบเทมเพลต (JSON, Markdown, และ TOML)
+- [x] **Feature:** เพิ่มระบบ Serialize Markdown (แปลง JSON กลับเป็น Markdown)
+- [x] **Monorepo Consolidation:** รวม schema, core-engine, interface และ conductor เข้ามาในโปรเจกต์เดียวกัน
+- [x] **Rust Proto Gen:** ตั้งค่า `prost-build` และตรวจสอบการสร้างโค้ด Rust จาก Proto แล้ว
+- [x] **Core Logic:** ย้าย Rule Engine และ DB Logic มาใช้โครงสร้างใหม่ (SQLite Implementation in Rust)
+
+## งานที่กำลังดำเนินการ 🚧
+- [ ] **Unified Interface Integration:** เชื่อมต่อ CLI เข้ากับระบบ Memory/Rule Engine ใหม่
+  - [x] วางโครงสร้างคำสั่ง CLI (`db`, `rule`, `agent`, `index`, `search`)
+  - [ ] พัฒนา Implementation ของคำสั่ง CLI ให้ทำงานกับ `MemoryStore`
+- [ ] **Semantic Search Implementation:**
+  - [x] วางโครงสร้าง `CodeSense` ใน `core`
+  - [ ] เชื่อมต่อกับ Ollama (nomic-embed-text) เพื่อสร้าง index จริง
+
+## งานที่รอการดำเนินการ (Future Tasks) ⏳
+- [ ] **MCP Implementation:** พัฒนาส่วนเชื่อมต่อ MCP
+  - [x] **MCP Server (TS):** สร้าง MCP Server เบื้องต้นโดยใช้ Generated Proto และ DB (Neon)
+  - [ ] **MCP Server (Rust):** ย้ายการทำงานของ MCP มาที่ Rust Engine โดยตรง
+- [ ] **Hybrid Cloud Integration (model/):**
+  - [ ] ออกแบบระบบ **Artifact Sync** (SSH/Patch/S3) ระหว่าง Termux และ Modal Cloud
+  - [ ] เพิ่มคำสั่ง `sync` เพื่อส่ง Patch/File ไปรันงานหนักบน Cloud
+- [ ] **Template V2:** ออกแบบระบบเทมเพลตเวอร์ชันใหม่เพื่อรองรับฟีเจอร์ขั้นสูง:
+  - [ ] **Markdown Parser:** การจัดการ Comment (`<!-- -->`) และ Front Matter (YAML/TOML)
+  - [ ] **Schema:** การกำหนดรูปแบบ Input แบบใหม่ (Single/Multiple Choice)
+- [ ] **สถาปัตยกรรม Agent (Asynchronous Delegation):**
+  - [ ] **Background Execution:** รัน Worker เป็น Background Process
+  - [ ] **Notification System:** แจ้งเตือนผ่าน OS เมื่อ Worker ทำงานเสร็จ
+>>>>>>> 60e5226 (feat: unify specgen architecture into monorepo and stabilize core)

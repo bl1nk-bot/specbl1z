@@ -1,48 +1,45 @@
-# Specgen
+# Specgen (Unified bl1nk Engine)
 
-เครื่องมือสำหรับสร้างและตรวจสอบ Workflow Template (รองรับ JSON, Markdown+XML และ TOML)
+ระบบจัดการ Workflow, Memory Store และ Coding Standards ที่รวมประสิทธิภาพของ Rust เข้ากับความยืดหยุ่นของ TypeScript ภายใต้สถาปัตยกรรม Monorepo
 
-## โครงสร้างโปรเจกต์
+## 🏗️ สถาปัตยกรรม (Architecture)
 
-- `cli/`: ตัวโปรแกรมหลักสำหรับใช้งานผ่าน Command Line
-- `core/`: ไลบรารีหลักสำหรับการ Parsing, Validation และ Rendering
-- `schema/`: เก็บ JSON Schema สำหรับตรวจสอบความถูกต้องของเทมเพลต
-- `templates/`: โฟลเดอร์เก็บเทมเพลตตัวอย่าง
-- `tests/`: Integration Tests สำหรับตรวจสอบการทำงานร่วมกัน
+โปรเจกต์นี้ขับเคลื่อนด้วยหลักการ **Single Source of Truth** โดยใช้ Protobuf เป็นตัวเชื่อมกลาง:
 
-## การใช้งาน (Usage)
+- **`/core`**: Engine หลัก (Rust) จัดการ Template, Memory Store, และ Rules Engine
+- **`/cli`**: เครื่องมือ Command Line (Rust) สำหรับจัดการ Database, Rules, และ Agents
+- **`/craft`**: Local Database Layer (SQLite) สำหรับการเก็บความจำเชิงโครงสร้าง
+- **`/schema`**: Protobuf Definitions สำหรับการแลกเปลี่ยนข้อมูลระหว่างภาษา
+- **`/app`**: ระบบ Interface และ MCP Server (TypeScript)
+- **`/conductor`**: การบริหารจัดการโปรเจกต์ผ่าน **Conductor Protocol**
 
-หลังจากติดตั้งแล้ว สามารถใช้คำสั่ง `specgen` ได้โดยตรง:
+## 📄 เอกสารสำคัญ (Core Documents)
 
-### 1. ดูรายการเทมเพลต
+- [**SPEC.md**](./SPEC.md): รายละเอียดข้อกำหนดและเป้าหมายของระบบ (What & Why)
+- [**PLAN.md**](./PLAN.md): แผนการดำเนินงานและ Phase ต่างๆ ของโปรเจกต์ (How)
+- [**ARCHITECT.md**](./ARCHITECT.md): รายละเอียดการออกแบบระบบและโครงสร้างข้อมูล (Design)
+- [**TODO.md**](./TODO.md): รายการงานที่เสร็จแล้วและงานที่กำลังดำเนินการ (Progress)
+
+## 🚀 สถานะปัจจุบัน (Current Status)
+
+- ✅ **Core Stability**: โค้ดผ่านการตรวจสอบ `fmt`, `clippy` และรันเทสผ่าน 100% (46 unit, 9 integration tests)
+- ✅ **Template Engine**: รองรับการแปลงรูปแบบ JSON, Markdown และ TOML อย่างสมบูรณ์
+- ✅ **Monorepo Consolidation**: รวบรวมทุกโมดูลเข้ามาอยู่ในโครงสร้างเดียวกันพร้อมระบบ Auto-gen Proto
+- 🚧 **In Progress**: การเชื่อมต่อ CLI เข้ากับระบบ Memory Store และการทำ Semantic Search
+
+## 🛠️ การเริ่มใช้งาน
+
+### 1. เครื่องมือ CLI (Rust)
 ```bash
-specgen list-templates
+# ตรวจสอบคำสั่งที่มีให้ใช้งาน
+cargo run -p specgen -- --help
 ```
 
-### 2. สร้างเอกสารจากเทมเพลต (Generate)
+### 2. การจัดการฐานข้อมูล
 ```bash
-specgen generate <TEMPLATE_ID> --var "Key=Value" --out output.md
+# เริ่มต้นฐานข้อมูลใหม่
+cargo run -p specgen -- db init
 ```
 
-### 3. สร้างเทมเพลตใหม่ (New)
-```bash
-specgen new <TEMPLATE_ID> --format <json|md|toml>
-```
-
-### 4. ตรวจสอบความถูกต้องของเทมเพลต (Validate)
-```bash
-specgen validate templates/spec-workflow.md
-```
-
-## การติดตั้งสำหรับผู้ใช้ใหม่ (Installation)
-
-```bash
-# ติดตั้งผ่าน Cargo
-cargo install --path cli
-```
-
-## การพัฒนา (Development)
-
-- **รันการทดสอบ:** `cargo test`
-- **ตรวจสอบโค้ด:** `cargo check`
-- **จัดรูปแบบโค้ด:** `cargo fmt`
+## 📜 ใบอนุญาต (License)
+MIT License - ดูรายละเอียดในไฟล์ [LICENSE](./LICENSE)

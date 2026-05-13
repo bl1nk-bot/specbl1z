@@ -1,0 +1,257 @@
+#!/usr/bin/env bash
+# Version: 0.1.1
+# gh-bl1nk-triage
+# gh extension: export security alerts พร้อม label อ่านง่าย
+#
+# ติดตั้ง:
+#   gh extension install ./gh-bl1nk-triage
+# หรือ:
+#   gh extension install bl1nk-bot/gh-bl1nk-triage
+#
+# ใช้:
+#   gh bl1nk-triage -r bl1nk-bot/agent-library
+#   gh bl1nk-triage -r bl1nk-bot/agent-library --csv
+
+set -e
+
+REPO=""
+CSV_MODE=false
+OUT_MD="security_alerts.md"
+OUT_CSV="security_alerts.csv"
+
+# ── parse args ────────────────────────────────────────────────────────────────
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -r|--repo) REPO="$2"; shift 2 ;;
+    --csv)     CSV_MODE=true; shift ;;
+    -h|--help)
+      echo "Usage: gh bl1nk-triage -r OWNER/REPO [--csv]"
+      echo ""
+      echo "Options:"
+      echo "  -r, --repo    Repository (e.g. bl1nk-bot/agent-library)"
+      echo "  --csv         Export as CSV instead of Markdown"
+      exit 0 ;;
+    *) echo "Unknown option: $1"; exit 1 ;;
+  esac
+done
+
+if [[ -z "$REPO" ]]; then
+  # ถ้าไม่ระบุ ใช้ repo ปัจจุบัน
+  REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || echo "")
+  if [[ -z "$REPO" ]]; then
+    echo "Error: ระบุ repo ด้วย -r OWNER/REPO"
+    exit 1
+  fi
+fi
+
+echo "📦 ดึง security alerts จาก $REPO ..."
+
+# ── label functions ───────────────────────────────────────────────────────────
+
+label_severity() {
+  case "$1" in
+    critical) echo "🔴 CRITICAL" ;;
+    high)     echo "🟠 HIGH" ;;
+    medium)   echo "🟡 MEDIUM" ;;
+    low)      echo "🟢 LOW" ;;
+    *)        echo "⚪ UNKNOWN" ;;
+  esac
+}
+
+label_scope() {
+  case "$1" in
+    runtime)     echo "🚀 prod" ;;
+    development) echo "🔧 dev-only" ;;
+    *)           echo "❓ unknown" ;;
+  esac
+}
+
+label_source() {
+  case "$1" in
+    dependabot) echo "📦 Dependabot" ;;
+    codescan)   echo "🔍 CodeQL" ;;
+    secret)     echo "🔑 Secret" ;;
+  esac
+}
+
+# plain label สำหรับ CSV
+plain_severity() {
+  echo "$1" | tr '[:lower:]' '[:upper:]'
+}
+
+# ── fetch ─────────────────────────────────────────────────────────────────────
+
+echo "  → Dependabot alerts..."
+DEP_JSON=$(gh api "/repos/$REPO/dependabot/alerts?per_page=100&state=open" 2>/dev/null || echo "[]")
+
+echo "  → CodeQL alerts..."
+CODE_JSON=$(gh api "/repos/$REPO/code-scanning/alerts?per_page=100&state=open" 2>/dev/null || echo "[]")
+
+echo "  → Secret scanning alerts..."
+SECRET_JSON=$(gh api "/repos/$REPO/secret-scanning/alerts?per_page=100&state=open" 2>/dev/null || echo "[]")
+
+DEP_COUNT=$(echo "$DEP_JSON" | jq "length" | tr -d "[:space:]")
+CODE_COUNT=$(echo "$CODE_JSON" | jq "length" | tr -d "[:space:]")
+SECRET_COUNT=$(echo "$SECRET_JSON" | jq "length" | tr -d "[:space:]")
+TOTAL=$((DEP_COUNT + CODE_COUNT + SECRET_COUNT))
+
+echo ""
+echo "  พบ: Dependabot=$DEP_COUNT  CodeQL=$CODE_COUNT  Secret=$SECRET_COUNT  รวม=$TOTAL"
+echo ""
+
+# ── Markdown output ───────────────────────────────────────────────────────────
+
+if [[ "$CSV_MODE" == false ]]; then
+
+cat > "$OUT_MD" << EOF
+# Security Alerts Report
+> **Repo:** $REPO
+> **วันที่:** $(date '+%Y-%m-%d %H:%M')
+> **รวมทั้งหมด:** $TOTAL alerts (Dependabot: $DEP_COUNT | CodeQL: $CODE_COUNT | Secret: $SECRET_COUNT)
+
+---
+
+## 📦 Dependabot Alerts ($DEP_COUNT)
+
+> แจ้งเมื่อ **library/package** ที่ใช้อยู่มีช่องโหว่ด้านความปลอดภัย
+
+EOF
+
+if [[ "$DEP_COUNT" -gt 0 ]]; then
+  echo "| # | แจ้งเรื่อง | Package | Version | Severity | Scope | สรุปปัญหา |" >> "$OUT_MD"
+  echo "|---|-----------|---------|---------|----------|-------|-----------|" >> "$OUT_MD"
+
+  echo "$DEP_JSON" | jq -r '.[] |
+    [
+      (.number | tostring),
+      .security_advisory.summary,
+      .dependency.package.name,
+      (.dependency.manifest_path // "N/A"),
+      .security_advisory.severity,
+      (.dependency.scope // "unknown"),
+      ((.security_advisory.identifiers // []) | map(select(.type=="CVE")) | .[0].value // "N/A")
+    ] | @tsv' | while IFS=$'\t' read -r num summary pkg manifest sev scope cve; do
+    sev_label=$(label_severity "$sev")
+    scope_label=$(label_scope "$scope")
+    echo "| $num | $sev_label | \`$pkg\` | \`$manifest\` | $sev_label | $scope_label | $summary (CVE: $cve) |" >> "$OUT_MD"
+  done
+else
+  echo "_ไม่มี Dependabot alerts_" >> "$OUT_MD"
+fi
+
+cat >> "$OUT_MD" << EOF
+
+---
+
+## 🔍 CodeQL / Code Scanning Alerts ($CODE_COUNT)
+
+> แจ้งเมื่อพบ **รูปแบบโค้ดที่อาจเป็นช่องโหว่** เช่น injection, path traversal
+
+EOF
+
+if [[ "$CODE_COUNT" -gt 0 ]]; then
+  echo "| # | Rule | แจ้งเรื่อง | Severity | ไฟล์ | บรรทัด |" >> "$OUT_MD"
+  echo "|---|------|-----------|----------|------|--------|" >> "$OUT_MD"
+
+  echo "$CODE_JSON" | jq -r '.[] |
+    [
+      (.number | tostring),
+      .rule.id,
+      .rule.description,
+      .rule.severity,
+      (.most_recent_instance.location.path // "N/A"),
+      (.most_recent_instance.location.start_line | tostring)
+    ] | @tsv' | while IFS=$'\t' read -r num rule_id desc sev path line; do
+    sev_label=$(label_severity "$sev")
+    echo "| $num | \`$rule_id\` | $desc | $sev_label | \`$path\` | $line |" >> "$OUT_MD"
+  done
+else
+  echo "_ไม่มี CodeQL alerts_" >> "$OUT_MD"
+fi
+
+cat >> "$OUT_MD" << EOF
+
+---
+
+## 🔑 Secret Scanning Alerts ($SECRET_COUNT)
+
+> แจ้งเมื่อพบ **API key, token, หรือ credential** ที่ถูก commit ขึ้น repo
+
+EOF
+
+if [[ "$SECRET_COUNT" -gt 0 ]]; then
+  echo "| # | ประเภท Secret | ไฟล์ที่พบ | Commit |" >> "$OUT_MD"
+  echo "|---|--------------|----------|--------|" >> "$OUT_MD"
+
+  echo "$SECRET_JSON" | jq -r '.[] |
+    [
+      (.number | tostring),
+      .secret_type_display_name,
+      ((.locations // [{}])[0].details.path // "N/A"),
+      (((.locations // [{}])[0].details.commit_sha // "N/A") | .[0:7])
+    ] | @tsv' | while IFS=$'\t' read -r num stype path commit; do
+    echo "| $num | 🔑 $stype | \`$path\` | \`$commit\` |" >> "$OUT_MD"
+  done
+else
+  echo "_ไม่มี Secret alerts_" >> "$OUT_MD"
+fi
+
+cat >> "$OUT_MD" << EOF
+
+---
+
+## สรุป Pattern
+
+| แหล่ง | จำนวน | ความหมาย |
+|-------|-------|----------|
+| 📦 Dependabot | $DEP_COUNT | library มีช่องโหว่ |
+| 🔍 CodeQL | $CODE_COUNT | โค้ดมีรูปแบบอันตราย |
+| 🔑 Secret | $SECRET_COUNT | credential หลุดใน repo |
+EOF
+
+  echo "✅ บันทึกแล้ว → $OUT_MD"
+
+# ── CSV output ────────────────────────────────────────────────────────────────
+
+else
+
+  echo "source,number,severity,scope,package_or_rule,file,summary,cve" > "$OUT_CSV"
+
+  echo "$DEP_JSON" | jq -r '.[] |
+    [
+      "Dependabot",
+      (.number | tostring),
+      .security_advisory.severity,
+      (.dependency.scope // "unknown"),
+      .dependency.package.name,
+      (.dependency.manifest_path // "N/A"),
+      .security_advisory.summary,
+      ((.security_advisory.identifiers // []) | map(select(.type=="CVE")) | .[0].value // "N/A")
+    ] | @csv' >> "$OUT_CSV"
+
+  echo "$CODE_JSON" | jq -r '.[] |
+    [
+      "CodeQL",
+      (.number | tostring),
+      .rule.severity,
+      "N/A",
+      .rule.id,
+      (.most_recent_instance.location.path // "N/A"),
+      .rule.description,
+      "N/A"
+    ] | @csv' >> "$OUT_CSV"
+
+  echo "$SECRET_JSON" | jq -r '.[] |
+    [
+      "Secret",
+      (.number | tostring),
+      "critical",
+      "N/A",
+      .secret_type_display_name,
+      (((.locations // [{}])[0].details.path) // "N/A"),
+      ("Secret found: " + .secret_type_display_name),
+      "N/A"
+    ] | @csv' >> "$OUT_CSV"
+
+  echo "✅ บันทึกแล้ว → $OUT_CSV"
+fi

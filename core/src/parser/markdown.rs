@@ -318,6 +318,72 @@ fn extract_attributes(e: &BytesStart) -> Result<Value, String> {
     Ok(attrs)
 }
 
+/// Serialize a template JSON Value back into Markdown+XML format
+pub fn serialize_markdown_template(value: &Value) -> Result<String, String> {
+    let mut output = String::new();
+
+    let workflow = value
+        .get("workflow")
+        .ok_or_else(|| "Missing 'workflow' object".to_string())?;
+
+    let title = workflow.get("title").and_then(|v| v.as_str()).unwrap_or("");
+    let restart = workflow
+        .get("restart")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+
+    output.push_str(&format!(
+        "<workflow title=\"{}\" restart=\"{}\">\n",
+        title, restart
+    ));
+
+    if let Some(rules) = workflow.get("rules").and_then(|v| v.as_str()) {
+        output.push_str("<rules>\n");
+        output.push_str(rules);
+        output.push_str("\n</rules>\n");
+    }
+
+    if let Some(steps) = workflow.get("steps").and_then(|v| v.as_array()) {
+        for step in steps {
+            let id = step.get("id").and_then(|v| v.as_str()).unwrap_or("");
+            let critical = step
+                .get("critical")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+            let content = step.get("content").and_then(|v| v.as_str()).unwrap_or("");
+
+            output.push_str(&format!("<step id=\"{}\" critical=\"{}\">\n", id, critical));
+            output.push_str(content);
+            output.push_str("\n</step>\n");
+        }
+    }
+
+    if let Some(loop_restart) = workflow.get("loop_restart").and_then(|v| v.as_str()) {
+        output.push_str("<loop_restart>\n");
+        output.push_str(loop_restart);
+        output.push_str("\n</loop_restart>\n");
+    }
+
+    if let Some(output_template) = value.get("output_template") {
+        let format = output_template
+            .get("format")
+            .and_then(|v| v.as_str())
+            .unwrap_or("markdown");
+        let content = output_template
+            .get("content")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+
+        output.push_str(&format!("<output_template format=\"{}\">\n", format));
+        output.push_str(content);
+        output.push_str("\n</output_template>\n");
+    }
+
+    output.push_str("</workflow>\n");
+
+    Ok(output)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -431,5 +497,31 @@ Content with & ampersand and Thai: สวัสดี
         assert!(rules.contains("</script>"));
         let content = result["workflow"]["steps"][0]["content"].as_str().unwrap();
         assert!(content.contains("&"));
+    }
+
+    #[test]
+    fn test_serialize_markdown() {
+        let input = json!({
+            "workflow": {
+                "title": "Test Serial",
+                "restart": "1",
+                "rules": "Rule 1",
+                "steps": [
+                    { "id": "0", "critical": true, "content": "Step 0" }
+                ],
+                "loop_restart": "Restart info"
+            },
+            "output_template": {
+                "format": "markdown",
+                "content": "# Output"
+            }
+        });
+
+        let serialized = serialize_markdown_template(&input).unwrap();
+        assert!(serialized.contains("<workflow title=\"Test Serial\" restart=\"1\">"));
+        assert!(serialized.contains("<rules>\nRule 1\n</rules>"));
+        assert!(serialized.contains("<step id=\"0\" critical=\"true\">\nStep 0\n</step>"));
+        assert!(serialized
+            .contains("<output_template format=\"markdown\">\n# Output\n</output_template>"));
     }
 }

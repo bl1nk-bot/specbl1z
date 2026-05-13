@@ -6,8 +6,23 @@ edition = "2021"
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+serde_yaml = "0.9"
 jsonschema = "0.18"
-colored = "2"  # for colored output in validator
+colored = "2"
 regex = "1"
 toml = "0.8"
 quick-xml = { version = "0.37", features = ["escape-html"] }
+prost = { version = "0.14.3", features = ["derive"] }
+anyhow = "1"
+rusqlite = { version = "0.32", features = ["bundled", "serde_json"] }
+reqwest = { version = "0.12", features = ["json", "blocking"] }
+sqlite-vec = "0.1"
+ignore = "0.4"
+bincode = "1"
+chrono = { version = "0.4.44", features = ["serde"] }
+
+[build-dependencies]
+prost-build = "0.14.3"
+
+[dev-dependencies]
+tempfile = "3"

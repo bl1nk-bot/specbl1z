@@ -1,0 +1,74 @@
+name: Security Triage & Anti-Slop
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # รันทุกเที่ยงคืน
+  workflow_dispatch:      # รันด้วยมือได้จากหน้า Actions
+    inputs:
+      repository:
+        description: 'Repo to triage (owner/repo)'
+        required: true
+        default: 'bl1nk-bot/agent-library'
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: read
+      issues: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install jq
+
+      - name: Install gh-bl1nk-triage extension
+        run: |
+          gh extension install .
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Triage Engine
+        id: triage
+        run: |
+          REPO="${{ github.event.inputs.repository || 'bl1nk-bot/agent-library' }}"
+          OWNER=$(echo $REPO | cut -d'/' -f1)
+          NAME=$(echo $REPO | cut -d'/' -f2)
+          
+          # รันระบบประมวลผล Slop-Aware
+          python3 triage_security.py $OWNER $NAME
+          
+          # เก็บผลลัพธ์เป็นตัวแปรสำหรับขั้นตอนถัดไป
+          echo "output_file=triage_output.json" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Triage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-triage-report
+          path: triage_output.json
+
+      - name: Create Alerts Summary Issue
+        if: success()
+        run: |
+          # ใช้ gh-bl1nk-triage สร้าง Markdown report
+          REPO="${{ github.event.inputs.repository || 'bl1nk-bot/agent-library' }}"
+          gh bl1nk-triage -r $REPO
+          
+          # สร้าง Issue พร้อมแนบรายงาน
+          gh issue create \
+            --title "Security Triage Report: $REPO" \
+            --body-file security_alerts.md \
+            --label "security,triage"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

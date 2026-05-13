@@ -1,0 +1,219 @@
+syntax = "proto3";
+
+package bl1nk;
+
+enum RuleTag {
+  MUST = 0;
+  SHOULD = 1;
+  AVOID = 2;
+}
+
+enum MemoryScope {
+  SCOPE_GLOBAL = 0;
+  SCOPE_PROJECT = 1;
+  SCOPE_SESSION = 2;
+  SCOPE_WORKING = 3;
+  SCOPE_POLICY = 4;
+  SCOPE_IDENTITY = 5;
+}
+
+enum MemoryCategory {
+  CATEGORY_FACT = 0;
+  CATEGORY_PREFERENCE = 1;
+  CATEGORY_HISTORY = 2;
+  CATEGORY_CONTEXT = 3;
+  CATEGORY_INFERENCE = 4;
+}
+
+enum PromptBlockType {
+  BLOCK_SYSTEM = 0;
+  BLOCK_POLICY = 1;
+  BLOCK_IDENTITY = 2;
+  BLOCK_MEMORY = 3;
+  BLOCK_TASK = 4;
+  BLOCK_TOOL_INSTRUCTION = 5;
+  BLOCK_PLAN = 6;
+  BLOCK_USER_INPUT = 7;
+  BLOCK_GUARDRAIL = 8;
+  BLOCK_OUTPUT_FORMAT = 9;
+}
+
+message Category {
+  int32 id = 1;
+  string key = 2;
+  string label = 3;
+  string icon = 4;
+  int32 order_index = 5;
+}
+
+message Section {
+  int32 id = 1;
+  int32 category_id = 2;
+  string title = 3;
+  string icon = 4;
+  string color = 5;
+  string text_color = 6;
+  int32 order_index = 7;
+}
+
+message Rule {
+  int32 id = 1;
+  int32 section_id = 2;
+  string text = 3;
+  RuleTag tag = 4;
+  optional string code = 5;
+  int32 order_index = 6;
+  bool is_custom = 7;
+  optional string user_id = 8;
+}
+
+message UserProgress {
+  string user_id = 1;
+  int32 rule_id = 2;
+  bool checked = 3;
+}
+
+message RuleList {
+  repeated Rule rules = 1;
+}
+
+// ==================== Memory System (FR1.1) ====================
+
+message MemoryEntry {
+  optional int64 id = 1;
+  MemoryScope scope = 2;
+  MemoryCategory category = 3;
+  string key = 4;
+  string value = 5;
+  /// provenance: where this came from
+  optional string source = 6;
+  float confidence = 7;        // 0.0 .. 1.0
+  int64 created_at = 8;        // Unix timestamp
+  int64 updated_at = 9;
+  int32 version = 10;
+  string status = 11;          // "active", "archived", "expired"
+  repeated string tags = 12;
+  optional string owner = 13;  // user_id if scoped to user
+  string access_level = 14;    // "public", "project", "private", "secret"
+  optional string provenance = 15;  // detailed source metadata (JSON)
+  optional int64 expires_at = 16;   // Unix timestamp, optional TTL
+}
+
+message MemoryLink {
+  int64 id = 1;
+  int64 from_entry_id = 2;
+  int64 to_entry_id = 3;
+  string relation_type = 4;    // "references", "depends_on", "contradicts", etc.
+  optional string metadata = 5; // JSON
+}
+
+message MemoryAuditLog {
+  int64 id = 1;
+  int64 entry_id = 2;
+  string operation = 3;        // "insert", "update", "delete", "link"
+  string performed_by = 4;     // user_id or "system"
+  int64 timestamp = 5;
+  optional string old_value = 6;
+  optional string new_value = 7;
+}
+
+// ==================== Prompt System (FR1.2, FR1.3) ====================
+
+message PromptBlock {
+  string id = 1;
+  PromptBlockType type = 2;
+  int32 priority = 3;          // 1 (highest) to 10 (lowest)
+  MemoryScope scope = 4;
+  string content = 5;
+  string source = 6;           // provenance
+  optional string constraints = 7;  // JSON: token_limit, must_include, etc.
+  repeated string dependencies = 8;  // block IDs this depends on
+  int32 version = 9;
+}
+
+message ContextPack {
+  string session_id = 1;
+  repeated PromptBlock blocks = 2;  // ordered by priority
+  int64 assembled_at = 3;
+  optional string trace_id = 4;
+  int32 total_tokens_estimate = 5;
+}
+
+// ==================== Conflict & Policy (FR1.4, FR3) ====================
+
+message ConflictRecord {
+  string id = 1;
+  string conflicting_block_ids = 2;  // JSON array
+  string conflict_type = 3;          // "scope_violation", "rule_violation", "priority_inversion"
+  string description = 4;
+  string resolution = 5;             // "first_wins", "higher_priority", "manual"
+  string resolved_by = 6;            // user_id or "system"
+  int64 resolved_at = 7;
+  bool is_resolved = 8;
+}
+
+message PolicyRule {
+  string id = 1;
+  string rule_type = 2;         // "hard", "soft", "context", "safety"
+  string name = 3;
+  string description = 4;
+  string condition = 5;         // JSONLogic or custom DSL
+  string action = 6;            // "allow", "deny", "modify", "flag"
+  int32 priority = 7;           // evaluation order
+  string scope = 8;             // which scopes this applies to
+  bool enabled = 9;
+  int64 effective_from = 10;
+  optional int64 effective_until = 11;
+}
+
+message PolicyEvaluation {
+  string context_id = 1;
+  string rule_id = 2;
+  bool allowed = 3;
+  string modification = 4;      // JSON of suggested changes
+  string reason = 5;
+}
+
+// ==================== Test & Work Instructions (FR6) ====================
+
+message TestCase {
+  string id = 1;
+  string type = 2;             // "unit", "integration", "e2e", "edge"
+  string title = 3;
+  string description = 4;
+  string precondition = 5;
+  string steps = 6;            // Markdown or JSON array
+  string expected_result = 7;
+  string related_step_id = 8;  // links to workflow step
+  float estimated_duration = 9; // minutes
+}
+
+message TestSuite {
+  string id = 1;
+  string name = 2;
+  repeated string test_case_ids = 3;
+}
+
+message TestPlan {
+  string id = 1;
+  string template_id = 2;
+  string version = 3;
+  repeated TestSuite suites = 4;
+  map<string, TestCase> test_cases = 5;  // keyed by id
+  float coverage_target = 6;  // e.g., 0.8 for 80%
+  string generated_by = 7;
+  int64 generated_at = 8;
+  optional string llm_model_used = 9;
+}
+
+message WorkInstruction {
+  string id = 1;
+  string template_id = 2;
+  string test_plan_id = 3;
+  string format = 4;           // "markdown", "json", "html"
+  string content = 5;          // rendered document
+  string version = 6;
+  int64 created_at = 7;
+  optional string approved_by = 8;
+  optional int64 approved_at = 9;
+}
