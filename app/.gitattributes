@@ -1,0 +1,28 @@
+# Git attributes for cross-OS development
+# Normalize line endings
+
+# Text files - use LF in repo, convert on checkout
+* text=auto
+
+# Shell scripts - always LF
+*.sh text eol=lf
+
+# PowerShell - CRLF on Windows
+*.ps1 text eol=crlf
+
+# Batch files
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Source code - LF
+*.js text eol=lf
+*.ts text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+
+# Keep binary files as-is
+*.png binary
+*.jpg binary
+*.ico binary
+*.exe binary
+*.dll binary

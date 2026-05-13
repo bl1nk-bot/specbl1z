@@ -1,0 +1,58 @@
+{
+  "name": "bl1nk",
+  "version": "4.0.0",
+  "description": "bl1nk Coding Standards CLI + Server — enforce professional code across your team",
+  "main": "dist/server.js",
+  "preferGlobal": true,
+  "bin": {
+    "bl1nk": "./src/cli.js",
+    "bl1nk-start": "./bin/start.js"
+  },
+  "files": [
+    "src/",
+    "bin/",
+    "public/",
+    "dist/",
+    "*.sh",
+    "*.ps1",
+    "Makefile",
+    "README.md"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsup",
+    "start": "node bin/start.js",
+    "setup": "node src/setup.js",
+    "seed": "tsx src/seed.ts",
+    "db:setup": "psql $DATABASE_URL -f src/schema.sql",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "check": "biome check .",
+    "highlight": "node scripts/highlight.js",
+    "test": "node --test test/*.test.js",
+    "mcp": "tsx src/mcp.ts",
+    "export": "./export.sh"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.12.0",
+    "@hono/node-server": "^1.13.0",
+    "@linear/sdk": "^29.0.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@neondatabase/serverless": "^1.0.0",
+    "hono": "^4.6.0",
+    "jsonwebtoken": "^9.0.2",
+    "protobufjs": "^8.0.3",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "^22.19.18",
+    "biome": "^0.2.2",
+    "shiki": "^1.26.1",
+    "ts-proto": "^2.11.8",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
