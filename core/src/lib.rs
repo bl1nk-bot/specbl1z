@@ -9,6 +9,7 @@ pub mod bl1nk {
 }
 
 pub mod db;
+pub mod distiller;
 pub mod memory;
 pub mod models;
 pub mod rules_engine;

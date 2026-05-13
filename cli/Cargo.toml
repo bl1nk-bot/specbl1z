@@ -14,3 +14,4 @@ craft-local-db = { path = "../craft" }
 serde_json = "1"
 serde_yaml = "0.9"
 anyhow = "1"
+ignore = "0.4"

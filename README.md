@@ -39,6 +39,54 @@ cargo run -p specgen -- --help
 ```bash
 # เริ่มต้นฐานข้อมูลใหม่
 cargo run -p specgen -- db init
+
+### 3. คำสั่งเพิ่มเติม (New Commands)
+
+#### Task Worker
+```bash
+# เพิ่มงานใหม่ (task)
+cargo run -p specgen -- task add --title "echo 'Hello World'"
+
+# ดูรายการงาน
+cargo run -p specgen -- task list
+
+# รัน Worker (后台 poll ทุก 10 วินาที)
+cargo run -p specgen -- task worker --poll-interval 10
+```
+
+#### Cron Job Integration
+```bash
+# เพิ่ม Cron job
+cargo run -p specgen -- cron add --expression "*/5 * * * *" --task-id 1
+
+# ดู Cron jobs ที่ติดตั้ง
+cargo run -p specgen -- cron list
+
+# ลบ Cron jobs ทั้งหมด (ต้องยืนยัน)
+cargo run -p specgen -- cron clear
+```
+
+#### Sync (Push to remote)
+```bash
+# Generate patch และส่ง
+cargo run -p specgen -- sync --push --endpoint http://your-server:8000/sync
+
+# Dry run (ไม่ส่ง)
+cargo run -p specgen -- sync --push --dry-run
+```
+
+#### Indexing (Ollama)
+```bash
+# ทดสอบ Ollama connection
+cargo run -p specgen -- index --verify-connection
+
+# Index all blocks (non-background)
+cargo run -p specgen -- index --all
+
+# Index in background daemon
+cargo run -p specgen -- index --background --ollama-url http://localhost:11434 --model nomic-embed-text
+```
+
 ```
 
 ## 📜 ใบอนุญาต (License)

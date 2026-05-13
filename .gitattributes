@@ -1,0 +1,19 @@
+# Force LF for all text files
+* text=auto eol=lf
+
+# Explicitly handle scripts
+*.sh text eol=lf
+*.py text eol=lf
+*.rs text eol=lf
+*.ts text eol=lf
+*.js text eol=lf
+
+# Data files
+*.json text
+*.toml text
+*.md text
+*.proto text
+
+# Database files (Binary)
+*.db binary
+*.sqlite binary

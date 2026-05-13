@@ -1,0 +1,35 @@
+# EditorConfig - Consistent coding style across editors and OS
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# Web / Node.js standard
+[*.{js,ts,jsx,tsx,json,yml,yaml,sh,css,html}]
+indent_size = 2
+
+# Markdown specific
+[*.md]
+trim_trailing_whitespace = false
+indent_size = 2
+
+# Shell scripts MUST use LF
+[*.sh]
+end_of_line = lf
+
+# Rust standard
+[*.rs]
+indent_size = 4
+
+# Python standard
+[*.py]
+indent_size = 4
+
+# Makefile usually requires tabs
+[Makefile]
+indent_style = tab

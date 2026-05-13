@@ -114,6 +114,11 @@ enum Commands {
         #[command(subcommand)]
         cmd: MemoryCommands,
     },
+    /// Manage Skills via PyO3 integration
+    Skill {
+        #[command(subcommand)]
+        cmd: SkillCommands,
+    },
     /// Show schema info
     Schema,
 }
@@ -242,6 +247,26 @@ enum DbCommands {
     /// Handle generic tool call (usually from MCP)
     #[command(external_subcommand)]
     Generic(Vec<String>),
+}
+
+#[derive(Subcommand)]
+enum SkillCommands {
+    /// Distill and classify skills from a directory using PyO3
+    Distill {
+        /// Directory to search for SKILL.md files
+        #[arg(short, long)]
+        dir: String,
+        /// Path to python logic script
+        #[arg(long, default_value = "scripts/distiller_logic.py")]
+        script: String,
+    },
+    /// List all distilled skills
+    List,
+    /// Search for skills using semantic search
+    Search {
+        /// The query to search for
+        query: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -693,6 +718,37 @@ Hello, {{name}}!
             let sense = specgen_core::sense::CodeSense::new(&root)?;
             sense.search(&query)?;
         }
+        Commands::Skill { cmd } => match cmd {
+            SkillCommands::Distill { dir, script } => {
+                println!("🚀 Starting Skill Distillation via PyO3...");
+                let distiller = specgen_core::distiller::SkillDistiller::new(Path::new(&script))?;
+                
+                let walker = ignore::WalkBuilder::new(&dir).build();
+                let mut count = 0;
+                let mut slop_count = 0;
+                
+                for entry in walker.into_iter().filter_map(|e| e.ok()) {
+                    if entry.path().is_file() && (entry.path().ends_with("SKILL.md") || entry.path().ends_with("skill.md")) {
+                        count += 1;
+                        let path = entry.path();
+                        match distiller.analyze_file(path) {
+                            Ok(meta) => {
+                                if meta.is_slop {
+                                    slop_count += 1;
+                                    println!("🗑️  SLOP: {} (Score: {}/10) - {}", meta.name, meta.quality_score, path.display());
+                                } else {
+                                    println!("✅ KEEP: {} (Tags: {:?}) - {}", meta.name, meta.tags, path.display());
+                                }
+                            }
+                            Err(e) => {
+                                println!("❌ ERROR processing {}: {}", path.display(), e);
+                            }
+                        }
+                    }
+                }
+                println!("\n📊 Distillation Complete: Processed {} files, found {} low-quality (slop) skills.", count, slop_count);
+            }
+        },
         Commands::Task { cmd } => match cmd {
             TaskCommands::Add {
                 title,
@@ -716,7 +772,6 @@ Hello, {{name}}!
                 }
             }
             TaskCommands::Worker { database, interval } => {
-                use std::time::{SystemTime, UNIX_EPOCH};
                 println!("👷 Task Worker started for `{}`", database);
                 println!("Interval: {}s (Ctrl+C to stop)", interval);
                 let delegator = specgen_core::task_delegator::TaskDelegator::new(&database)?;
