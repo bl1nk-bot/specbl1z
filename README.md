@@ -1,93 +1,102 @@
-# Specgen (Unified bl1nk Engine)
+# Specgen — AI-Native Spec-Driven Development (v3)
 
-ระบบจัดการ Workflow, Memory Store และ Coding Standards ที่รวมประสิทธิภาพของ Rust เข้ากับความยืดหยุ่นของ TypeScript ภายใต้สถาปัตยกรรม Monorepo
+**สถานะ:** Phase 1 กำลังทำ (dead code audit ✓, storage unification pending)  
+**จำนวน file:**
+- 14 files ใน `core/src`
+- 1188 lines ใน `cli/src/main.rs`
+- server/ มีอยู่ (web dashboard)
+- `model/engine/` ยังอยู่ (dead code target)
+- `mcp-server/` ยังไม่มี
 
-## 🏗️ สถาปัตยกรรม (Architecture)
+---
 
-โปรเจกต์นี้ขับเคลื่อนด้วยหลักการ **Single Source of Truth** โดยใช้ Protobuf เป็นตัวเชื่อมกลาง:
+## โครงสร้างปัจจุบัน
 
-- **`/core`**: Engine หลัก (Rust) จัดการ Template, Memory Store, และ Rules Engine
-- **`/cli`**: เครื่องมือ Command Line (Rust) สำหรับจัดการ Database, Rules, และ Agents
-- **`/craft`**: Local Database Layer (SQLite) สำหรับการเก็บความจำเชิงโครงสร้าง
-- **`/schema`**: Protobuf Definitions สำหรับการแลกเปลี่ยนข้อมูลระหว่างภาษา
-- **`/app`**: ระบบ Interface และ MCP Server (TypeScript)
-- **`/conductor`**: การบริหารจัดการโปรเจกต์ผ่าน **Conductor Protocol**
+```
+specgen/
+├── Cargo.toml          # [workspace] members: ["core", "cli"]
+├── core/               # 14 files
+│   ├── parser/, renderer/, db/, memory/, rules_engine/, sense/, sync/
+│   ├── task_delegator/, distiller/, markdown/, validator/, models.rs
+│   └── schema.rs
+├── cli/                # 1188 lines main.rs
+├── server/             # TypeScript/Hono web dashboard
+└── craft.db            # Legacy SQLite
+```
 
-## 📄 เอกสารสำคัญ (Core Documents)
+## Quick Start
 
-- [**SPEC.md**](./SPEC.md): รายละเอียดข้อกำหนดและเป้าหมายของระบบ (What & Why)
-- [**PLAN.md**](./PLAN.md): แผนการดำเนินงานและ Phase ต่างๆ ของโปรเจกต์ (How)
-- [**ARCHITECT.md**](./ARCHITECT.md): รายละเอียดการออกแบบระบบและโครงสร้างข้อมูล (Design)
-- [**TODO.md**](./TODO.md): รายการงานที่เสร็จแล้วและงานที่กำลังดำเนินการ (Progress)
-
-## 🚀 สถานะปัจจุบัน (Current Status)
-
-- ✅ **Core Stability**: โค้ดผ่านการตรวจสอบ `fmt`, `clippy` และรันเทสผ่าน 100% (46 unit, 9 integration tests)
-- ✅ **Template Engine**: รองรับการแปลงรูปแบบ JSON, Markdown และ TOML อย่างสมบูรณ์
-- ✅ **Monorepo Consolidation**: รวบรวมทุกโมดูลเข้ามาอยู่ในโครงสร้างเดียวกันพร้อมระบบ Auto-gen Proto
-- 🚧 **In Progress**: การเชื่อมต่อ CLI เข้ากับระบบ Memory Store และการทำ Semantic Search
-
-## 🛠️ การเริ่มใช้งาน
-
-### 1. เครื่องมือ CLI (Rust)
 ```bash
-# ตรวจสอบคำสั่งที่มีให้ใช้งาน
+cargo build
+cargo run -p specgen -- validate path/to/template.json
+cargo run -p specgen -- generate MY_TEMPLATE -- to json
+cargo run -p specgen -- convert template.md --to json
+cargo run -p specgen -- memory list --json | jq '.[].key'
+```
+
+## สรุปสถานะ
+
+✅ **เสร็จแล้ว:**
+- Workspace core+cli
+- CLI scaffold, `--json` flag
+- Zero warnings
+- Tests 100%
+- Template helpers, output format, `convert`, Markdown round-trip server/, docs/ anchoring
+
+🚧 **กำลังทำ:**
+- Dead code removal (2 targets จับต้องแล้ว: models.rs + validator.rs)
+- Unified storage (plan design pending)
+- Semantic search (Ollama ยังไม่ต่อ)
+- CLI verbs implementation (parse/stubs)
+
+⏳ **ยังไม่ทำ:**
+- `mcp-server/` (Rust MCP binary)
+- Remove craft crate
+- `policies/` directory (8 files)
+- Docs (jules, cookbook, workflow, handoff, import-map, tree)
+
+---
+
+## Commands
+
+| Command | Purpose |
+|---|---|
+| `specgen validate <file>` | Verify template |
+| `specgen generate <id>` | Render output |
+| `specgen convert <file> --to json\|md\|toml` | Switch format |
+| `specgen db list / show / delete` | View Craft DB |
+| `specgen rule ...` | Rules management |
+| `specgen agent ...` | Agent tasks |
+| `specgen index build` | Rebuild index (Ollama) |
+| `specgen search <query>` | Semantic search |
+| `specgen sync` | Craft DB sync (cross-OS) |
+| `specgen new` | Scaffold new template |
+| `specgen doctor` | Checklist tools |
+| `specgen setup` | Install missing tools |
+
+---
+
+## Specsup>
+
+| File | Detail |
+|---|---|
+| [SPEC.md](./SPEC.md) | V3 vision, features |
+| [PLAN.md](./PLAN.md) | Roadmap 3 phases |
+| [TODO.md](./TODO.md) | Task list ✅/🚧/⏳ |
+
+---
+
+## Build & Test
+
+```bash
+cargo fmt
+cargo clippy -- -D warnings
+cargo test
+cargo build --release
 cargo run -p specgen -- --help
 ```
 
-### 2. การจัดการฐานข้อมูล
-```bash
-# เริ่มต้นฐานข้อมูลใหม่
-cargo run -p specgen -- db init
+---
 
-### 3. คำสั่งเพิ่มเติม (New Commands)
-
-#### Task Worker
-```bash
-# เพิ่มงานใหม่ (task)
-cargo run -p specgen -- task add --title "echo 'Hello World'"
-
-# ดูรายการงาน
-cargo run -p specgen -- task list
-
-# รัน Worker (后台 poll ทุก 10 วินาที)
-cargo run -p specgen -- task worker --poll-interval 10
-```
-
-#### Cron Job Integration
-```bash
-# เพิ่ม Cron job
-cargo run -p specgen -- cron add --expression "*/5 * * * *" --task-id 1
-
-# ดู Cron jobs ที่ติดตั้ง
-cargo run -p specgen -- cron list
-
-# ลบ Cron jobs ทั้งหมด (ต้องยืนยัน)
-cargo run -p specgen -- cron clear
-```
-
-#### Sync (Push to remote)
-```bash
-# Generate patch และส่ง
-cargo run -p specgen -- sync --push --endpoint http://your-server:8000/sync
-
-# Dry run (ไม่ส่ง)
-cargo run -p specgen -- sync --push --dry-run
-```
-
-#### Indexing (Ollama)
-```bash
-# ทดสอบ Ollama connection
-cargo run -p specgen -- index --verify-connection
-
-# Index all blocks (non-background)
-cargo run -p specgen -- index --all
-
-# Index in background daemon
-cargo run -p specgen -- index --background --ollama-url http://localhost:11434 --model nomic-embed-text
-```
-
-```
-
-## 📜 ใบอนุญาต (License)
-MIT License - ดูรายละเอียดในไฟล์ [LICENSE](./LICENSE)
+**License:** MIT
+**Updated:** 2025-05-15  ✅

@@ -1,2 +1,0 @@
--- Initial specgen v1 schema (existing)
--- Placeholder for v1 tables

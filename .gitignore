@@ -13,19 +13,20 @@ Cargo.lock
 Thumbs.db
 
 # Databases & Persistence
-craft.db
+# craft.db is now tracked to allow syncing between environments
 *.db-shm
 *.db-wal
 .sense/
 
+# Logs
+logs/
+*.log
+
 # Node.js
 node_modules/
 dist/
-*.log
 
 # Secrets
 .env
 .env.*
-
-# Generated reports
-duplicates_report.json
+craft.db
