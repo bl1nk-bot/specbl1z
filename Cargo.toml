@@ -26,4 +26,4 @@ quick-xml = { version = "0.37", features = ["escape-html"] }
 bincode = "1"
 rusqlite = { version = "0.32", features = ["bundled"] }
 reqwest = { version = "0.13", features = ["json", "blocking"] }
-pyo3 = { version = "0.23", features = ["auto-initialize"] }
+pyo3 = { version = "0.24", features = ["auto-initialize"] }
