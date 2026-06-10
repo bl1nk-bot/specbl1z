@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Linear (bl1nkflow)
+    url: https://linear.app/billlzzz/team/BNK
+    about: Active development tracking — use Linear for sprint work
+  - name: specgen Docs
+    url: https://github.com/bl1nk-bot/specbl1z/blob/main/README.md
+    about: Read the docs first
