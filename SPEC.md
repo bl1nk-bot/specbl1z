@@ -1,95 +1,106 @@
-# ข้อกำหนดเฉพาะของระบบ (System Specification) — specgen v2
+# ข้อกำหนดเฉพาะของระบบ (System Specification) — specgen v3.1
 
 ## 1. วิสัยทัศน์ (Vision)
-สร้างแพลตฟอร์ม **Spec-Driven Development** ที่มี AI เป็นหัวใจหลักในการช่วยออกแบบข้อกำหนด (Spec), วางแผนทดสอบ (Test Plan), และสร้างคำสั่งงาน (Work Instructions) โดยอัตโนมัติ โดยมีพื้นฐานจากระบบจัดการ Memory ส่วนบุคคลแบบแยกชั้น และเครื่องยนต์การประกอบ Prompt ที่ปลอดภัย
+สร้างแพลตฟอร์ม **AI-Native Spec-Driven Development** ที่รวดเร็ว โปร่งใส และทนทาน โดยใช้สถาปัตยกรรม Rust-centric ที่รวมประสิทธิภาพของ Core Engine เข้ากับ MCP Server โดยตรง พร้อมระบบจัดการเวอร์ชันข้อมูลแบบ Git เพื่อการทำงานข้ามแพลตฟอร์มอย่างไร้รอยต่อ
 
-## 2. วัตถุประสงค์ของระบบ
+## 2. วัตถุประสงค์ของระบบ (v3.1)
 
-### 2.1 Personal Memory Management
-- จัดเก็บความจำผู้ใช้แบบแยก `scope` อย่างน้อย 6 ระดับ: global, project, session, working, policy, identity
-- เรียกคืนได้ตาม scope และ confidence
-- ป้องกันการปนกันระหว่าง memory หลายชั้น
-- รองรับเวอร์ชัน, การอ้างอิง, และ audit trail
-- ทุก memory entry ต้องมี `provenance` (แหล่งที่มา) และ `confidence` (ระดับความมั่นใจ)
+### 2.1 Unified Architecture (Monorepo)
+- `core` — engine หลัก (parser, renderer, db, memory, validator, sync, task_delegator)
+- `cli` — binary คำสั่งทั้งหมด (validate, generate, db, agent, index, search, sync, guardrail)
+- `api` — REST API (axum + tokio)
+- `sandbox` — OpenCode SDK ใน Rust (Daytona + Modal sandbox management)
+- `.opencode/` — OpenCode plugins TypeScript (สำหรับ Bun/macOS/Linux)
 
-### 2.2 Prompt Composition & Agent Orchestration
-- ประกอบ prompt จากหลายแหล่ง (identity, policy, task, memory, tool) โดยมีลำดับความสำคัญ
-- รักษา identity ของ agent ให้คงที่ตลอด session
-- ป้องกัน prompt drift, context bleed, hallucinated memory, instruction confusion
-- ทำให้ agent แยกแยะได้ว่า "อะไรคือข้อเท็จจริง", "อะไรคือคำสั่ง", "อะไรคือบริบทชั่วคราว"
+### 2.2 Open Bridge Architecture
+- CLI ทำหน้าที่เป็นสะพานระหว่าง Core Engine และสคริปต์ภายนอก
+- รองรับ **Standardized JSON I/O** ทุกคำสั่ง ใช้ร่วมกับ `jq` หรือ Python
+- Sandbox crate เป็น SDK สำหรับ AI agents เรียกใช้ sandbox ผ่าน REST API
 
-### 2.3 Template-Driven Workflow (จาก specgen เดิม)
-- สร้าง, ตรวจสอบ, และ render เทมเพลตในหลายรูปแบบ (JSON, Markdown, TOML)
-- แปลงเทมเพลตเป็น Test Plan และ Work Instructions โดยใช้ AI
-- ใช้มาตรฐานการเขียนโค้ด (coding standards) ในการตรวจสอบ template content
+### 2.3 Cross-Platform (Zero-Config Reproducibility)
+- `scripts/setup.sh` — bootstrap จากศูนย์ (Termux, Debian, Alpine, Arch, macOS)
+- `scripts/wizard.sh` — interactive setup ทุก platform
+- `scripts/integration-test.sh` — real-world pipeline test
+- Docker images: Debian, Alpine, Android cross-compile, bare sandbox, MSRV matrix
+- `Dockerfile` + `docker/docker-compose.yml` — build ทุก platform พร้อมกัน
 
-### 2.4 Semantic Code Search
-- ทำดัชนีโค้ดโปรเจกต์ด้วย Ollama embeddings
-- ค้นหาชิ้นส่วนโค้ดที่เกี่ยวข้องกับ requirement เพื่อช่วยออกแบบ test case
+### 2.4 Dependency Bootstrapper
+- ติดตั้งเครื่องมือจำเป็น (`jq`, `rg`, `rust`, `git`, `python3`) อัตโนมัติ
+- รองรับ package manager: pkg (Termux), apt (Debian/Ubuntu), apk (Alpine), pacman (Arch), brew (macOS)
 
-### 2.5 Security Triage
-- คัดกรองแจ้งเตือนความปลอดภัยจาก GitHub ด้วย weighted scoring และ slop detection
+### 2.5 DevOps Pipeline
+- `.github/workflows/rust-ci.yml` — check, test, clippy, fmt, lockfile
+- `.github/workflows/cross-platform.yml` — Linux, macOS, Android, MSRV matrix, integration test, Docker
+- `.github/workflows/release.yml` — multi-target binary release (linux-amd64, android-arm64)
+- `.github/dependabot.yml` — auto-update cargo deps ทุกสัปดาห์
+- `.github/prompts/` — agent instructions (anti-slop, auto-doc, dead-code-hunter, security-audit)
+- Git hooks: pre-commit (devops.sh), commit-msg (marker enforcement)
+- `Makefile` — make all, check, test, lint, fmt, build, release, setup, wizard, bench, docker-build
 
 ## 3. ข้อกำหนดเชิงฟังก์ชัน (Functional Requirements)
 
-### FR1: Data Model
-- FR1.1: ต้องมี `MemoryEntry` ที่เก็บ `id`, `scope`, `category`, `key`, `value`, `source`, `confidence`, `created_at`, `updated_at`, `version`, `status`, `tags`, `owner`, `access_level`, `provenance`, `expires_at`
-- FR1.2: ต้องมี `PromptBlock` ที่เก็บ `id`, `type` (system, policy, identity, memory, task, tool_instruction, plan, user_input, guardrail, output_format), `priority`, `scope`, `content`, `source`, `constraints`, `dependencies`, `version`
-- FR1.3: ต้องมี `ContextPack` ที่รวบรวม blocks สำหรับการ execute หนึ่งครั้ง
-- FR1.4: ต้องมี `ConflictRecord` สำหรับบันทึกความขัดแย้งระหว่าง blocks
+### FR1: Unified Data Model
+- SQLite (`data/craft.db`) — documents, collections, memory_entries, agent_executions, chunks
+- 4 migrations (v1 initial → v3 semantic + agentic unification → v4 memory topic)
+- `Database` trait พร้อมรองรับ MySQL ผ่าน sqlx (feature flag)
 
 ### FR2: Memory Engine
-- FR2.1: รองรับ CRUD operations โดย filter ตาม scope, category, confidence, tags
-- FR2.2: สามารถ link memory entries เข้าด้วยกันเพื่อสร้างความสัมพันธ์
-- FR2.3: มี audit log ทุกครั้งที่มีการ write/update/delete
-- FR2.4: รองรับ TTL (expires_at) สำหรับ transient memory
-- FR2.5: ต้องป้องกันการเขียนทับ identity memory โดยไม่ตั้งใจ
+- CRUD พร้อม Versioning + Confidence scoring
+- MemoryStore: scope (global/project/session), category (fact/rule/preference), topic
+- Audit log ติดตามทุกการเปลี่ยนแปลง
 
-### FR3: Policy Engine
-- FR3.1: มี Rule Registry สำหรับ hard rules, soft rules, context rules, safety rules
-- FR3.2: Evaluator ที่ตรวจสอบ memory retrieval ทุกครั้งว่าไม่ละเมิด policy
-- FR3.3: Conflict Resolver ที่ตัดสินใจเมื่อมี rule ขัดแย้งกัน (เช่น project memory ชนะ global memory)
-- FR3.4: Action Gate ที่ควบคุมว่าการกระทำใด (เช่น write memory, execute tool) ได้รับอนุญาต
+### FR3: Transparent CLI
+- ทุกความสามารถเรียกใช้ผ่าน CLI
+- `--json` flag สำหรับ machine-readable output (Open Bridge)
+- Commands: validate, generate, convert, db, agent, index, search, sync, task, memory, guardrail, skill, status
 
-### FR4: Prompt Composer
-- FR4.1: ประกอบ prompt ตามลำดับ: identity → policy → task → relevant memory → tool instructions → output constraints
-- FR4.2: สามารถ trim context ให้พอดีกับ token limit โดยคงความสำคัญ
-- FR4.3: แสดง provenance ของแต่ละ block ใน context pack
+### FR4: Sandbox SDK (OpenCode Integration)
+- Daytona: spin, exec, sync, delete sandbox
+- Modal.com: spin, exec, sync, delete sandbox
+- Webhook: spin via webhook, price comparison
+- Rust crate (`sandbox/`) + TypeScript plugins (`.opencode/`)
 
-### FR5: MCP Tools
-- FR5.1: `memory.search`, `memory.write`, `memory.update`, `memory.delete`, `memory.link`
-- FR5.2: `prompt.compose`, `prompt.validate`, `prompt.trim`
-- FR5.3: `policy.evaluate`, `policy.check_scope`, `policy.gate_action`
-- FR5.4: `template.create_from_prompt`, `template.generate_test_plan`, `template.generate_work_instructions`
-- FR5.5: `sense.search` (semantic search)
-- FR5.6: `triage.security` (GitHub security)
-
-### FR6: Template-to-Test Integration
-- FR6.1: จาก workflow template (ขั้นตอน, rules, loop_restart, output_template) ต้องสร้าง test plan outline ได้
-- FR6.2: ต้องสร้าง edge cases จาก loop_restart, critical steps, และ potential null/missing variable
-- FR6.3: ต้องสร้าง E2E test scenarios ที่เชื่อม step ตามลำดับ
-- FR6.4: สามารถ render work instructions document (Markdown/JSON) ที่รวม spec, test plan, และ coverage target
-
-### FR7: AI Client Collaboration
-- FR7.1: AI client (Claude Code, Cursor) สามารถเรียก MCP tools ทั้งหมดได้
-- FR7.2: ระบบต้องสามารถรับ feedback จาก AI หลัง verification และปรับปรุง memory/policy ตาม (ด้วยความระมัดระวัง)
-- FR7.3: ต้องมี guardrail ป้องกันไม่ให้ AI client เขียนทับ policy memory โดยตรง
+### FR5: REST API
+- Axum server: `GET /health`, `GET /api/memory`, `POST /api/memory`
+- In-memory DB support for testing
 
 ## 4. ข้อกำหนดที่ไม่ใช่ฟังก์ชัน (Non-Functional Requirements)
 
-- **Performance**: การดึง memory ต้องต่ำกว่า 100ms สำหรับ 1,000 entries
-- **Scalability**: รองรับโปรเจกต์ขนาดใหญ่ (10,000+ files) สำหรับ semantic indexing
-- **Security**: ห้าม PII รั่วใน prompt, ห้ามใช้ forbidden source, มี sanitization
-- **Reliability**: Policy engine ต้องทำงาน 100% consistent, ห้ามมี silent failure
-- **Observability**: ทุก operation ต้องมี audit log และ trace ID
+- **Speed**: CLI startup < 200ms, API response < 50ms
+- **Portability**: Termux/Android, Linux (x86_64, musl), macOS, Docker
+- **Reliability**: 57 tests (7 cli + 4 api + 36 core + 9 integration + 1 sandbox), 0 failures
+- **Code Quality**: cargo clippy -D warnings, cargo fmt, zero warnings
+- **Reproducibility**: setup.sh bootstraps from empty sandbox
 
-## 5. ข้อจำกัด (Constraints)
-- ใช้ Protobuf เป็น single source of truth สำหรับ data structures
-- Core logic ใน Rust, Web API และ MCP server ใน TypeScript (Hono)
-- ใช้ SQLite สำหรับ local storage, Neon (Postgres) สำหรับ cloud
-- ใช้ Ollama สำหรับ embeddings (ไม่มี cloud dependency)
+## 5. เทคโนโลยีหลัก (Tech Stack v3.1)
 
-## 6. ข้อกำหนดเชิงสถาปัตยกรรม (Architectural Constraints)
-- แยกระบบเป็น layers: Cold storage, Warm index, Session cache, Working buffer, Policy store
-- State management ต้องมี persistent, session, ephemeral states แยกกัน
-- ใช้ flow: Input Validation → Classification → Scope Resolution → Memory Retrieval → Policy Evaluation → Prompt Composition → Agent Execution → Observation → Memory Writeback / Audit
+- **Core/CLI/API/Sandbox**: Rust (workspace 4 crates)
+- **Storage**: SQLite (rusqlite bundled), MySQL (sqlx via feature flag)
+- **Web**: Axum + Tokio
+- **CLI**: Clap derive
+- **Sandbox SDK**: reqwest + serde + base64
+- **OpenCode Plugins**: TypeScript (.opencode/)
+- **CI/CD**: GitHub Actions matrix (5 OS + MSRV)
+- **Container**: Docker (4 platform images)
+- **External Tools**: jq, rg, python3 (auto-bootstrapped)
+
+## 6. โครงสร้างโปรเจค
+
+```
+specgen/
+├── core/           # engine (16 .rs files)
+├── cli/            # binary (1260 lines + 7 tests)
+├── api/            # REST server (4 tests)
+├── sandbox/        # OpenCode SDK Rust (1 test + 4 benchmarks)
+├── .opencode/      # OpenCode TypeScript plugins
+├── data/           # SQLite database
+├── schema/         # JSON schemas
+├── docker/         # Multi-platform Dockerfiles
+│   └── platforms/  # debian, alpine, android, bare, msrv
+├── scripts/        # setup.sh, wizard.sh, devops.sh, integration-test.sh
+├── .github/        # CI/CD workflows + prompts + dependabot
+├── Cargo.toml      # workspace root
+├── Makefile        # 16 targets
+├── Dockerfile
+└── docs/           # ARCHITECTURE.md, CHANGELOG.md
+```

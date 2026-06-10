@@ -1,0 +1,14 @@
+# Clippy configuration for specgen workspace
+# Extends workspace lints in Cargo.toml
+
+# Allow cognitive complexity up to 30 (default 25)
+cognitive-complexity-threshold = 30
+
+# Allow these lints project-wide
+allow-dbg-in-tests = true
+allow-print-in-tests = true
+
+# Warn on these patterns
+disallowed-methods = [
+    { path = "std::process::exit", reason = "Use anyhow::Result with `?` instead" },
+]

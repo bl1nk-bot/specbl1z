@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS memory_entries (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     scope TEXT NOT NULL CHECK(scope IN ('global', 'project', 'session', 'working', 'policy', 'identity')),
     category TEXT NOT NULL CHECK(category IN ('fact', 'preference', 'history', 'context', 'inference')),
+    topic TEXT NOT NULL CHECK(topic IN ('LEARN', 'WORK', 'TOOL', 'INTEREST', 'PROJECT', 'IDENTIFY')),
     key TEXT NOT NULL,
     value TEXT NOT NULL,
     source TEXT,                    -- provenance: where this came from

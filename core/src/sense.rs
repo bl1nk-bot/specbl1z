@@ -1,51 +1,33 @@
+use crate::db::Database;
 use anyhow::{anyhow, Result};
 use ignore::WalkBuilder;
 use reqwest::blocking::Client;
-use rusqlite::{params, Connection};
+use rusqlite::params;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 const OLLAMA_API: &str = "http://localhost:11434/api/embeddings";
 const MODEL: &str = "qwen3-embedding:0.6b";
-const SENSE_DIR: &str = ".sense";
-const DB_NAME: &str = "codesense.db";
 
 #[derive(Serialize, Deserialize, Debug)]
 struct EmbeddingResponse {
     embedding: Vec<f32>,
 }
 
-pub struct CodeSense {
-    db: Connection,
+pub struct CodeSense<'a> {
+    db: &'a Database,
     client: Client,
     project_name: String,
 }
 
-impl CodeSense {
-    pub fn new(root_dir: &Path) -> Result<Self> {
-        let sense_path = root_dir.join(SENSE_DIR);
-        if !sense_path.exists() {
-            std::fs::create_dir_all(&sense_path)?;
-        }
-        
-        let db_path = sense_path.join(DB_NAME);
-        let db = Connection::open(db_path)?;
+impl<'a> CodeSense<'a> {
+    pub fn new(db: &'a Database, project_root: &Path) -> Result<Self> {
         let client = Client::new();
-        let project_name = root_dir
+        let project_name = project_root
             .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or("unknown")
             .to_string();
-
-        db.execute(
-            "CREATE TABLE IF NOT EXISTS chunks (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                file_path TEXT,
-                content TEXT,
-                embedding BLOB
-            )",
-            [],
-        )?;
 
         Ok(Self {
             db,
@@ -73,7 +55,7 @@ impl CodeSense {
         println!("Indexing project: {}...", self.project_name);
 
         // Clear old index
-        self.db.execute("DELETE FROM chunks", [])?;
+        self.db.conn.execute("DELETE FROM chunks", [])?;
 
         let walker = WalkBuilder::new(root_dir)
             .hidden(false)
@@ -109,7 +91,7 @@ impl CodeSense {
                     let chunk_str = String::from_utf8_lossy(chunk);
                     if let Ok(emb) = self.get_embedding(&chunk_str) {
                         let emb_blob = bincode::serialize(&emb)?;
-                        self.db.execute(
+                        self.db.conn.execute(
                             "INSERT INTO chunks (file_path, content, embedding) VALUES (?, ?, ?)",
                             params![rel_path, format!("{}: chunk {}", rel_path, i), emb_blob],
                         )?;
@@ -127,6 +109,7 @@ impl CodeSense {
 
         let mut stmt = self
             .db
+            .conn
             .prepare("SELECT file_path, content, embedding FROM chunks")?;
         let rows = stmt.query_map([], |row| {
             let file_path: String = row.get(0)?;
@@ -138,7 +121,7 @@ impl CodeSense {
 
         let mut results = Vec::new();
         for row in rows {
-            let (path, content, emb) = row?;
+            let (path, content, emb): (String, String, Vec<f32>) = row?;
             let score = cosine_similarity(&query_emb, &emb);
             results.push((score, path, content));
         }

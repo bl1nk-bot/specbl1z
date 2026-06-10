@@ -1,6 +1,5 @@
 /target
-# Cargo.lock - Generally tracked for binary apps, but following current preference
-Cargo.lock
+# Cargo.lock tracked for binary app (workspace consistency)
 
 # IDEs
 .idea/
@@ -12,20 +11,36 @@ Cargo.lock
 .DS_Store
 Thumbs.db
 
-# Databases & Persistence
+# Rust artifacts
+*.rs.bk
+*.orig
+*.profraw
+*.profdata
+
+# Databases — only data/craft.db is tracked for cross-env sync
 craft.db
 *.db-shm
 *.db-wal
 .sense/
 
-# Node.js
+# Logs
+*.log
+
+# Node.js / OpenCode
 node_modules/
 dist/
-*.log
 
 # Secrets
 .env
 .env.*
+skill-log.json
 
-# Generated reports
-duplicates_report.json
+# Test artifacts
+test-skills/
+
+# Coverage
+coverage/
+tarpaulin/
+
+# macOS
+.DS_Store

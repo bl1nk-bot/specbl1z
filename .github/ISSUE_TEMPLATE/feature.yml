@@ -1,0 +1,53 @@
+name: Feature Request
+description: Propose a new feature for specgen
+title: "[FEAT] "
+labels: ["Feature", "enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem does this feature solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Describe the solution
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: core
+        - label: cli
+        - label: api
+        - label: sandbox
+        - label: docs
+        - label: ci/cd
+        - label: docker
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Target Platform
+      multiple: true
+      options:
+        - Termux/Android (ARM64)
+        - Linux (x86_64)
+        - Linux (musl/Alpine)
+        - macOS (ARM64)
+        - macOS (x86_64)
+        - Windows (x86_64)
+        - Docker (all)
+  - type: input
+    id: linear_ref
+    attributes:
+      label: Linear Issue (BNK-)
+      placeholder: BNK-

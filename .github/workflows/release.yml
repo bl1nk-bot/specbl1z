@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.suffix }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            suffix: linux-amd64
+          - os: ubuntu-latest
+            target: aarch64-linux-android
+            suffix: android-arm64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            suffix: windows-amd64
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build release
+        run: cargo build --workspace --release --target ${{ matrix.target }}
+
+      - name: Package binary
+        shell: bash
+        run: |
+          BIN_NAME="specgen-${{ github.ref_name }}-${{ matrix.suffix }}"
+          mkdir -p release
+          if [[ "${{ matrix.suffix }}" == windows-* ]]; then
+            cp target/${{ matrix.target }}/release/specgen.exe "release/$BIN_NAME.exe"
+            sha256sum "release/$BIN_NAME.exe" > "release/$BIN_NAME.exe.sha256"
+          else
+            cp target/${{ matrix.target }}/release/specgen "release/$BIN_NAME"
+            sha256sum "release/$BIN_NAME" > "release/$BIN_NAME.sha256"
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: specgen-${{ matrix.suffix }}
+          path: release/
+
+  # ---- Parallel: no wait, run as soon as any build finishes ----
+  # (Each build uploads independently, publish waits for all)
+
+  publish:
+    name: Create Release
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: specgen-*
+          merge-multiple: true
+          path: release/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          generate_release_notes: true

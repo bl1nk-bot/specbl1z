@@ -4,12 +4,10 @@ pub mod schema;
 pub mod sense;
 pub mod validator;
 
-pub mod bl1nk {
-    include!(concat!(env!("OUT_DIR"), "/bl1nk.rs"));
-}
-
 pub mod db;
 pub mod distiller;
+pub mod guardrail;
+pub mod markdown; // Make markdown module public
 pub mod memory;
 pub mod models;
 pub mod rules_engine;

@@ -1,8 +1,8 @@
-use anyhow::{Result, anyhow};
-use std::process::Command;
-use std::path::Path;
+use anyhow::{anyhow, Result};
 use reqwest::blocking::Client;
 use serde_json::{json, Value};
+use std::path::Path;
+use std::process::Command;
 
 pub struct SyncManager;
 
@@ -16,7 +16,10 @@ impl SyncManager {
             .output()?;
 
         if !output.status.success() {
-            return Err(anyhow!("Git diff failed: {}", String::from_utf8_lossy(&output.stderr)));
+            return Err(anyhow!(
+                "Git diff failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            ));
         }
 
         Ok(String::from_utf8_lossy(&output.stdout).to_string())
@@ -38,7 +41,10 @@ impl SyncManager {
         std::fs::remove_file(patch_path)?;
 
         if !output.status.success() {
-            return Err(anyhow!("Failed to apply patch: {}", String::from_utf8_lossy(&output.stderr)));
+            return Err(anyhow!(
+                "Failed to apply patch: {}",
+                String::from_utf8_lossy(&output.stderr)
+            ));
         }
 
         Ok(())
@@ -46,10 +52,7 @@ impl SyncManager {
 
     /// Sends a git patch to a remote endpoint (KiloCode Gateway / Modal).
     /// Endpoint URL can be overridden via parameter or KILOCODE_URL env var.
-    pub fn send_patch(
-        patch_content: &str,
-        endpoint_override: Option<&str>,
-    ) -> Result<Value> {
+    pub fn send_patch(patch_content: &str, endpoint_override: Option<&str>) -> Result<Value> {
         let endpoint = endpoint_override
             .map(|s| s.to_string())
             .or_else(|| std::env::var("KILOCODE_URL").ok())
@@ -86,7 +89,6 @@ impl SyncManager {
         Ok(result)
     }
 }
-
 
 #[cfg(test)]
 mod tests {

@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS memory_entries (
     owner TEXT,
     access_level TEXT DEFAULT 'private',
     provenance JSON,
-    expires_at INTEGER
+    expires_at INTEGER,
+    UNIQUE(key, scope, owner) ON CONFLICT REPLACE
 );
 
 CREATE INDEX IF NOT EXISTS idx_memory_entries_scope ON memory_entries(scope);

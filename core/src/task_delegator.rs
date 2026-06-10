@@ -1,4 +1,4 @@
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -60,7 +60,12 @@ impl TaskDelegator {
         Ok(Self { conn })
     }
 
-    pub fn add_task(&self, title: &str, schedule: Option<&str>, repeat: Option<&str>) -> Result<String> {
+    pub fn add_task(
+        &self,
+        title: &str,
+        schedule: Option<&str>,
+        repeat: Option<&str>,
+    ) -> Result<String> {
         let id = Uuid::new_v4().to_string().replace("-", "");
         self.conn.execute(
             "INSERT INTO tasks (id, title, status, schedule, repeat_rule) VALUES (?1, ?2, ?3, ?4, ?5)",
@@ -100,7 +105,9 @@ impl TaskDelegator {
 
     /// Get a single task by ID.
     pub fn get_task(&self, id: &str) -> Result<Option<Task>> {
-        let mut stmt = self.conn.prepare("SELECT id, title, status, schedule, repeat_rule, created_at FROM tasks WHERE id = ?1")?;
+        let mut stmt = self.conn.prepare(
+            "SELECT id, title, status, schedule, repeat_rule, created_at FROM tasks WHERE id = ?1",
+        )?;
         let mut rows = stmt.query(params![id])?;
         if let Some(row) = rows.next()? {
             Ok(Some(Task {
@@ -115,18 +122,13 @@ impl TaskDelegator {
             Ok(None)
         }
     }
-
-
-
-
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::tempdir;
-    use std::time::{SystemTime, UNIX_EPOCH};
     use rusqlite::Connection;
+    use tempfile::tempdir;
 
     // Helper: initialize the minimal DB schema required for TaskDelegator
     fn init_full_schema(conn: &Connection) -> rusqlite::Result<()> {
@@ -166,7 +168,9 @@ mod tests {
 
         let delegator = TaskDelegator::new(db_file).unwrap();
 
-        let id = delegator.add_task("Test Task", Some("daily 09:00"), Some("1d")).unwrap();
+        let id = delegator
+            .add_task("Test Task", Some("daily 09:00"), Some("1d"))
+            .unwrap();
         assert!(!id.is_empty());
 
         let tasks = delegator.list_tasks().unwrap();
@@ -213,27 +217,33 @@ mod tests {
             .unwrap()
             .as_secs();
         let older_ts = format!("{}", now - 10);
-        delegator.conn.execute(
-            "INSERT INTO tasks (id, title, status, created_at) VALUES (?1, ?2, ?3, ?4)",
-            params![
-                Uuid::new_v4().to_string().replace("-", ""),
-                "Task A",
-                "todo",
-                older_ts
-            ],
-        ).unwrap();
+        delegator
+            .conn
+            .execute(
+                "INSERT INTO tasks (id, title, status, created_at) VALUES (?1, ?2, ?3, ?4)",
+                params![
+                    Uuid::new_v4().to_string().replace("-", ""),
+                    "Task A",
+                    "todo",
+                    older_ts
+                ],
+            )
+            .unwrap();
 
         // Insert Task B with explicit newer created_at
         let newer_ts = format!("{}", now);
-        delegator.conn.execute(
-            "INSERT INTO tasks (id, title, status, created_at) VALUES (?1, ?2, ?3, ?4)",
-            params![
-                Uuid::new_v4().to_string().replace("-", ""),
-                "Task B",
-                "todo",
-                newer_ts
-            ],
-        ).unwrap();
+        delegator
+            .conn
+            .execute(
+                "INSERT INTO tasks (id, title, status, created_at) VALUES (?1, ?2, ?3, ?4)",
+                params![
+                    Uuid::new_v4().to_string().replace("-", ""),
+                    "Task B",
+                    "todo",
+                    newer_ts
+                ],
+            )
+            .unwrap();
 
         let tasks = delegator.list_tasks().unwrap();
         assert_eq!(tasks.len(), 2);
@@ -257,10 +267,13 @@ mod tests {
         let id = delegator.add_task("Status Test", None, None).unwrap();
 
         // Manually update status to 'done' using direct DB access
-        delegator.conn.execute(
-            "UPDATE tasks SET status = 'done' WHERE id = ?1",
-            params![id],
-        ).unwrap();
+        delegator
+            .conn
+            .execute(
+                "UPDATE tasks SET status = 'done' WHERE id = ?1",
+                params![id],
+            )
+            .unwrap();
 
         let tasks = delegator.list_tasks().unwrap();
         assert_eq!(tasks[0].status, "done");

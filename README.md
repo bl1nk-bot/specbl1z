@@ -1,93 +1,114 @@
-# Specgen (Unified bl1nk Engine)
+# Specgen — AI-Native Spec-Driven Development (v3.1)
 
-ระบบจัดการ Workflow, Memory Store และ Coding Standards ที่รวมประสิทธิภาพของ Rust เข้ากับความยืดหยุ่นของ TypeScript ภายใต้สถาปัตยกรรม Monorepo
+สถานะ: Phase 6 เสร็จ ✓ | 57 tests | 4 benchmarks | 6 platforms
 
-## 🏗️ สถาปัตยกรรม (Architecture)
-
-โปรเจกต์นี้ขับเคลื่อนด้วยหลักการ **Single Source of Truth** โดยใช้ Protobuf เป็นตัวเชื่อมกลาง:
-
-- **`/core`**: Engine หลัก (Rust) จัดการ Template, Memory Store, และ Rules Engine
-- **`/cli`**: เครื่องมือ Command Line (Rust) สำหรับจัดการ Database, Rules, และ Agents
-- **`/craft`**: Local Database Layer (SQLite) สำหรับการเก็บความจำเชิงโครงสร้าง
-- **`/schema`**: Protobuf Definitions สำหรับการแลกเปลี่ยนข้อมูลระหว่างภาษา
-- **`/app`**: ระบบ Interface และ MCP Server (TypeScript)
-- **`/conductor`**: การบริหารจัดการโปรเจกต์ผ่าน **Conductor Protocol**
-
-## 📄 เอกสารสำคัญ (Core Documents)
-
-- [**SPEC.md**](./SPEC.md): รายละเอียดข้อกำหนดและเป้าหมายของระบบ (What & Why)
-- [**PLAN.md**](./PLAN.md): แผนการดำเนินงานและ Phase ต่างๆ ของโปรเจกต์ (How)
-- [**ARCHITECT.md**](./ARCHITECT.md): รายละเอียดการออกแบบระบบและโครงสร้างข้อมูล (Design)
-- [**TODO.md**](./TODO.md): รายการงานที่เสร็จแล้วและงานที่กำลังดำเนินการ (Progress)
-
-## 🚀 สถานะปัจจุบัน (Current Status)
-
-- ✅ **Core Stability**: โค้ดผ่านการตรวจสอบ `fmt`, `clippy` และรันเทสผ่าน 100% (46 unit, 9 integration tests)
-- ✅ **Template Engine**: รองรับการแปลงรูปแบบ JSON, Markdown และ TOML อย่างสมบูรณ์
-- ✅ **Monorepo Consolidation**: รวบรวมทุกโมดูลเข้ามาอยู่ในโครงสร้างเดียวกันพร้อมระบบ Auto-gen Proto
-- 🚧 **In Progress**: การเชื่อมต่อ CLI เข้ากับระบบ Memory Store และการทำ Semantic Search
-
-## 🛠️ การเริ่มใช้งาน
-
-### 1. เครื่องมือ CLI (Rust)
-```bash
-# ตรวจสอบคำสั่งที่มีให้ใช้งาน
-cargo run -p specgen -- --help
-```
-
-### 2. การจัดการฐานข้อมูล
-```bash
-# เริ่มต้นฐานข้อมูลใหม่
-cargo run -p specgen -- db init
-
-### 3. คำสั่งเพิ่มเติม (New Commands)
-
-#### Task Worker
-```bash
-# เพิ่มงานใหม่ (task)
-cargo run -p specgen -- task add --title "echo 'Hello World'"
-
-# ดูรายการงาน
-cargo run -p specgen -- task list
-
-# รัน Worker (后台 poll ทุก 10 วินาที)
-cargo run -p specgen -- task worker --poll-interval 10
-```
-
-#### Cron Job Integration
-```bash
-# เพิ่ม Cron job
-cargo run -p specgen -- cron add --expression "*/5 * * * *" --task-id 1
-
-# ดู Cron jobs ที่ติดตั้ง
-cargo run -p specgen -- cron list
-
-# ลบ Cron jobs ทั้งหมด (ต้องยืนยัน)
-cargo run -p specgen -- cron clear
-```
-
-#### Sync (Push to remote)
-```bash
-# Generate patch และส่ง
-cargo run -p specgen -- sync --push --endpoint http://your-server:8000/sync
-
-# Dry run (ไม่ส่ง)
-cargo run -p specgen -- sync --push --dry-run
-```
-
-#### Indexing (Ollama)
-```bash
-# ทดสอบ Ollama connection
-cargo run -p specgen -- index --verify-connection
-
-# Index all blocks (non-background)
-cargo run -p specgen -- index --all
-
-# Index in background daemon
-cargo run -p specgen -- index --background --ollama-url http://localhost:11434 --model nomic-embed-text
-```
+## โครงสร้าง
 
 ```
+specgen/
+├── core/           # engine หลัก (16 .rs files)
+├── cli/            # CLI binary (7 tests)
+├── api/            # REST API server (4 tests)
+├── sandbox/        # OpenCode SDK Rust (1 test + 4 benchmarks)
+├── .opencode/      # OpenCode plugins (TypeScript)
+├── data/           # SQLite database
+├── docker/         # Multi-platform images (5 variants)
+│   └── platforms/  # debian, alpine, android, bare, msrv
+├── scripts/        # setup.sh, wizard.sh, devops.sh, integration-test.sh
+├── .github/        # CI/CD + prompts + dependabot
+└── docs/           # ARCHITECTURE.md, CHANGELOG.md
+```
 
-## 📜 ใบอนุญาต (License)
-MIT License - ดูรายละเอียดในไฟล์ [LICENSE](./LICENSE)
+## Quick Start
+
+```bash
+# Bootstrap from zero (ทุก platform)
+bash scripts/setup.sh
+
+# หรือ interactive wizard
+bash scripts/wizard.sh
+
+# หรือ make
+make all       # check + test + lint + fmt
+make build     # debug build
+make release   # release build
+make bench     # benchmarks
+```
+
+## Commands
+
+| Command | Purpose |
+|---|---|
+| `specgen validate <file>` | Validate template |
+| `specgen generate <id> --out out.md` | Render template |
+| `specgen convert <file> --to json\|md\|toml` | Convert format |
+| `specgen db init\|status` | Database manage |
+| `specgen memory list --json` | Memory query |
+| `specgen status` | Project status |
+| `specgen guardrail` | Policy enforcement |
+| `specgen task add\|list` | Task management |
+
+## Sandbox SDK (OpenCode)
+
+```rust
+// Rust (Termux/ทุก platform)
+use specgen_sandbox::{Daytona, spin, exec};
+
+let d = Daytona::from_env()?;
+let r = spin(&d, "https://github.com/bl1nk-bot/specbl1z.git", "main", "test")?;
+exec(&d, &r.sandbox_id.unwrap(), "make all")?;
+```
+
+```bash
+# OpenCode (Bun/macOS/Linux)
+opencode daytona:spin repoUrl=https://github.com/bl1nk-bot/specbl1z.git
+opencode daytona:exec sandboxId=<id> command="make all"
+```
+
+## CI/CD
+
+- **rust-ci.yml** — check, test, clippy, fmt, lockfile
+- **cross-platform.yml** — Linux, macOS, Android, MSRV (1.75/1.80/stable), Docker, integration
+- **release.yml** — linux-amd64 + android-arm64 binaries
+- **dependabot.yml** — cargo auto-updates ทุกสัปดาห์
+- **prompts/** — agent instructions (anti-slop, auto-doc, dead-code-hunter, security-audit)
+
+## Docker
+
+```bash
+make docker-build     # single platform (debian)
+make docker-all       # all 7 platforms via docker-compose
+```
+
+Images: debian, alpine (musl), android (cross-compile), bare (setup test), msrv (1.70/1.75/1.80)
+
+## Build & Test
+
+```bash
+cargo check --workspace                      # PASS
+cargo test --workspace                       # PASS (57 tests)
+cargo clippy --workspace -- -D warnings      # PASS
+cargo fmt --all -- --check                   # PASS
+cargo bench -p specgen-sandbox               # PASS (4 benchmarks)
+```
+
+## Test Coverage
+
+| Crate | Unit | Integration | Benchmarks |
+|-------|------|-------------|------------|
+| core | 36 | 9 | - |
+| cli | 7 | - | - |
+| api | 4 | - | - |
+| sandbox | 1 | - | 4 |
+| **Total** | **48** | **9** | **4** |
+
+## Docs
+
+| File | Detail |
+|---|---|
+| [SPEC.md](./SPEC.md) | v3.1 specification |
+| [PLAN.md](./PLAN.md) | Development roadmap |
+| [TODO.md](./TODO.md) | Task list |
+
+**License:** MIT
+**Updated:** 2025-06-10

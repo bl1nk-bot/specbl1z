@@ -1,0 +1,59 @@
+name: Sandbox Test
+description: Test Daytona or Modal sandbox connection
+title: "[SANDBOX] "
+labels: ["Testing", "Infrastructure"]
+body:
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Provider
+      options:
+        - Daytona
+        - Modal
+        - Both (cross-platform)
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Test Plan
+      description: Commands to run and expected results
+      value: |
+        1. Set credentials (DAYTONA_API_KEY / MODAL_TOKEN_ID+SECRET)
+        2. Run: cargo run -p specgen-sandbox -- spin --provider <type> --repo https://github.com/bl1nk-bot/specbl1z.git --branch <branch>
+        3. Run: cargo run -p specgen-sandbox -- exec --id <id> --cmd "make all"
+        4. Verify all 57 tests pass (exit code = 0)
+        5. Run: cargo run -p specgen-sandbox -- sync --id <id>
+        6. Run: cargo run -p specgen-sandbox -- delete --id <id>
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Success Criteria
+      options:
+        - label: Sandbox created in under 2 minutes
+        - label: All 57 tests pass on target platform
+        - label: Sync to GitHub completes
+        - label: Sandbox deleted without errors
+  - type: textarea
+    id: results
+    attributes:
+      label: Results
+      description: Paste command output here
+      render: shell
+  - type: dropdown
+    id: trigger_platform
+    attributes:
+      label: Trigger Platform
+      options:
+        - Termux/Android (ARM64)
+        - Linux (x86_64)
+        - macOS (ARM64)
+        - Windows (x86_64)
+        - GitHub Actions
+  - type: input
+    id: linear_ref
+    attributes:
+      label: Linear Issue (BNK-)
+      placeholder: BNK-

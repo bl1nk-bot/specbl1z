@@ -1,0 +1,10 @@
+{
+  "name": "specgen-opencode-sandbox",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@opencode-ai/sdk": "^0.1.0",
+    "zod": "^3.22.0"
+  }
+}

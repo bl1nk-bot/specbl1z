@@ -1,0 +1,14 @@
+# Specgen Configuration
+# This file contains user and system-wide settings.
+
+[user]
+name = ""
+email = ""
+
+[system]
+mode = "direct"  # direct or spawn
+log_level = "info"
+
+[paths]
+tools_bin = "./bin"
+database = "./data/craft.db"

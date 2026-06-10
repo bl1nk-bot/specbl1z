@@ -9,8 +9,8 @@ use std::fs;
 
 /// Helper: read a sample template from ../templates/
 fn load_template(name: &str) -> String {
-    fs::read_to_string(format!("../templates/{}", name))
-        .expect(&format!("Failed to read ../templates/{}", name))
+    let path = format!("../templates/{}", name);
+    fs::read_to_string(&path).unwrap_or_else(|_| panic!("Failed to read {}", path))
 }
 
 /// Render a parsed template Value by extracting output_template.content

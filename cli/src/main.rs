@@ -1,8 +1,9 @@
 use anyhow::{anyhow, Context, Result};
 use clap::{Parser, Subcommand, ValueEnum};
+use specgen_core::markdown; // Moved markdown to its own import
 use specgen_core::{
-    parse_template, render_markdown, validate_template, RenderContext, TemplateFormat,
-    task_delegator::TaskStatus,
+    db::Database, parse_template, render_markdown, task_delegator::TaskStatus, validate_template,
+    RenderContext, TemplateFormat,
 };
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -11,12 +12,21 @@ use std::path::{Path, PathBuf};
 #[command(name = "specgen")]
 #[command(about = "Workflow template generator and validator with integrated Craft database", long_about = None)]
 struct Cli {
+    /// Output results in JSON format
+    #[arg(long, global = true)]
+    json: bool,
     #[command(subcommand)]
     command: Commands,
 }
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Start the Specgen API server
+    Serve {
+        /// Port to listen on
+        #[arg(short, long, default_value = "3000")]
+        port: u16,
+    },
     /// Validate a template file (JSON, Markdown+XML, or TOML) against the schema
     Validate {
         /// Path to template file
@@ -63,10 +73,10 @@ enum Commands {
         #[command(subcommand)]
         cmd: DbCommands,
     },
-    /// Rule management
-    Rule {
+    /// Tier management
+    Tier {
         #[command(subcommand)]
-        cmd: RuleCommands,
+        cmd: TierCommands,
     },
     /// Agent management
     Agent {
@@ -109,10 +119,14 @@ enum Commands {
         #[arg(short, long, default_value = "craft.db")]
         database: String,
     },
-    /// Memory management
     Memory {
         #[command(subcommand)]
         cmd: MemoryCommands,
+    },
+    /// Guardrail management
+    Guardrail {
+        #[command(subcommand)]
+        cmd: GuardrailCommands,
     },
     /// Manage Skills via PyO3 integration
     Skill {
@@ -148,6 +162,9 @@ enum MemoryCommands {
         /// Category (fact|preference|history|context|inference)
         #[arg(long)]
         category: String,
+        /// Topic (LEARN|WORK|TOOL|INTEREST|PROJECT|IDENTIFY)
+        #[arg(long)]
+        topic: String,
         /// Key
         #[arg(long)]
         key: String,
@@ -155,6 +172,26 @@ enum MemoryCommands {
         #[arg(long)]
         value: String,
     },
+}
+
+#[derive(Subcommand)]
+enum GuardrailCommands {
+    /// Show active guardrail rules
+    Show,
+    /// Apply a rule pack
+    Apply {
+        /// Name of the pack (default|strict|fast|security|migration)
+        name: String,
+    },
+    /// List all available rule packs
+    List,
+    /// Define a custom rule pack (scaffolds from default)
+    Create {
+        /// Name of the new pack
+        name: String,
+    },
+    /// Revert to default rules
+    Reset,
 }
 
 #[derive(Subcommand)]
@@ -270,8 +307,8 @@ enum SkillCommands {
 }
 
 #[derive(Subcommand)]
-enum RuleCommands {
-    /// List all rules from the database
+enum TierCommands {
+    /// List all tiers from the database
     List {
         /// Database file path (default: craft.db)
         #[arg(short, long, default_value = "craft.db")]
@@ -307,7 +344,8 @@ fn parse_keyval(s: &str) -> Result<(String, String), String> {
     Ok((s[..pos].to_string(), s[pos + 1..].to_string()))
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
@@ -323,17 +361,33 @@ fn main() -> Result<()> {
             let schema = specgen_core::load_schema();
             match validate_template(&schema, &instance) {
                 Ok(()) => {
-                    println!("Template is valid.");
+                    if cli.json {
+                        println!("{}", serde_json::json!({"status": "valid"}));
+                    } else {
+                        println!("Template is valid.");
+                    }
                 }
                 Err(errors) => {
-                    anyhow::bail!(
-                        "Template is invalid:\n{}",
-                        errors
-                            .iter()
-                            .map(|e| format!(" - {}", e))
-                            .collect::<Vec<_>>()
-                            .join("\n")
-                    );
+                    let error_messages: Vec<String> =
+                        errors.iter().map(|e| e.to_string()).collect();
+                    if cli.json {
+                        println!(
+                            "{}",
+                            serde_json::json!({
+                                "status": "invalid",
+                                "errors": error_messages,
+                            })
+                        );
+                    } else {
+                        anyhow::bail!(
+                            "Template is invalid:\n{}",
+                            error_messages
+                                .iter()
+                                .map(|e| format!(" - {}", e))
+                                .collect::<Vec<_>>()
+                                .join("\n")
+                        );
+                    }
                 }
             }
         }
@@ -436,7 +490,10 @@ fn main() -> Result<()> {
                             }
                         }
                     }
-                    if ids.is_empty() {
+                    if cli.json {
+                        let sorted: Vec<_> = ids.into_iter().collect();
+                        println!("{}", serde_json::to_string_pretty(&sorted)?);
+                    } else if ids.is_empty() {
                         println!("No templates found in {}/", dir);
                     } else {
                         println!("Available templates:");
@@ -544,11 +601,9 @@ Hello, {{name}}!
                         database
                     );
                 }
-                let conn = craft_local_db::db::open(&database)?;
-                let schema = include_str!("../../craft/schema.sql");
-                craft_local_db::db::run_schema(&conn, schema)?;
+                let db = Database::new(&database)?;
 
-                let doc_id = craft_local_db::db::create_document(&conn, "Project Workspace")?;
+                let doc_id = db.create_document("Project Workspace")?;
                 println!("📄 Creating document `Project Workspace` (ID: {})", doc_id);
 
                 let collections = [
@@ -581,6 +636,15 @@ Hello, {{name}}!
                         vec![("Name", "text"), ("Usage", "text"), ("Description", "text")],
                     ),
                     (
+                        "Memory",
+                        vec![
+                            ("Key", "text"),
+                            ("Value", "text"),
+                            ("Scope", "text"),
+                            ("Category", "text"),
+                        ],
+                    ),
+                    (
                         "KB",
                         vec![
                             ("Title", "text"),
@@ -588,14 +652,16 @@ Hello, {{name}}!
                             ("Tags", "multi_select"),
                         ],
                     ),
+                    (
+                        "User",
+                        vec![("Name", "text"), ("Email", "text"), ("Role", "text")],
+                    ),
                 ];
 
                 for (name, props) in collections {
-                    let coll_id = craft_local_db::db::create_collection(&conn, &doc_id, name)?;
+                    let coll_id = db.create_collection(&doc_id, name)?;
                     for (i, (p_name, p_type)) in props.into_iter().enumerate() {
-                        craft_local_db::db::add_property(
-                            &conn, &coll_id, p_name, p_type, i as i32,
-                        )?;
+                        db.add_property(&coll_id, p_name, p_type, i as i32)?;
                     }
                     println!("✅ Created Collection: {}", name);
                 }
@@ -608,20 +674,21 @@ Hello, {{name}}!
                 if !Path::new(&database).exists() {
                     anyhow::bail!("Database file `{}` not found.", database);
                 }
-                let conn = craft_local_db::db::open(&database)?;
-                let docs = craft_local_db::db::list_documents(&conn)?;
-                println!("Documents in `{}`:", database);
-                for doc in docs {
-                    println!(" - {}", doc);
+                let db = Database::new(&database)?;
+                let docs = db.list_documents()?;
+                if cli.json {
+                    println!("{}", serde_json::to_string_pretty(&docs)?);
+                } else {
+                    println!("Documents in `{}`:", database);
+                    for doc in docs {
+                        println!(" - {}", doc);
+                    }
                 }
             }
             DbCommands::Import { file, database } => {
-                let conn = craft_local_db::db::open(&database)?;
-                let schema = include_str!("../../craft/schema.sql");
-                craft_local_db::db::run_schema(&conn, schema)?;
-
+                let mut db = Database::new(&database)?;
                 let md = std::fs::read_to_string(&file)?;
-                let imported = craft_local_db::markdown::import_markdown(&conn, &md, None)?;
+                let imported = markdown::import_markdown(&mut db, &md, None)?;
                 println!(
                     "✅ Imported `{}` -> Document ID: {} (Title: {})",
                     file.display(),
@@ -636,32 +703,23 @@ Hello, {{name}}!
                 // and then execute the corresponding craft logic.
             }
         },
-        Commands::Rule { cmd } => match cmd {
-            RuleCommands::List { database, format } => {
+        Commands::Tier { cmd } => match cmd {
+            TierCommands::List { database, format } => {
                 if !Path::new(&database).exists() {
                     anyhow::bail!(
                         "Database file `{}` not found. Please run `specgen db init` first.",
                         database
                     );
                 }
-                let conn = craft_local_db::db::open(&database)?;
-                let mut stmt = conn.prepare(
-                    "SELECT content FROM blocks b 
-                     JOIN documents d ON b.document_id = d.id 
-                     WHERE d.title = 'Rules' OR b.type = 'text'",
-                )?;
-                let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
-                let mut rules = Vec::new();
-                for row in rows {
-                    rules.push(row?);
-                }
+                let db = Database::new(&database)?;
+                let tiers = db.get_tiers(1).unwrap_or_default(); // Using get_tiers with placeholder ID
 
                 if format == "json" {
-                    println!("{}", serde_json::to_string_pretty(&rules)?);
+                    println!("{}", serde_json::to_string_pretty(&tiers)?);
                 } else {
-                    println!("Current Rules:");
-                    for rule in rules {
-                        println!(" - {}", rule);
+                    println!("Current Tiers:");
+                    for tier in tiers {
+                        println!(" - {}", tier.text);
                     }
                 }
             }
@@ -674,14 +732,8 @@ Hello, {{name}}!
                         database
                     );
                 }
-                let conn = craft_local_db::db::open(&database)?;
-                let mut stmt =
-                    conn.prepare("SELECT name FROM collections WHERE name = 'Agents'")?;
-                let mut rows = stmt.query([])?;
-                let mut agents = Vec::new();
-                while let Some(row) = rows.next()? {
-                    agents.push(row.get::<_, String>(0)?);
-                }
+                let db = Database::new(&database)?;
+                let agents = db.list_agents()?;
 
                 if format == "json" {
                     println!("{}", serde_json::to_string_pretty(&agents)?);
@@ -695,6 +747,7 @@ Hello, {{name}}!
         },
         Commands::Index { background } => {
             let root = std::env::current_dir()?;
+            let _database = "craft.db".to_string();
             if background {
                 let bin = std::env::current_exe()?;
                 let log_file = root.join("index.log");
@@ -703,41 +756,61 @@ Hello, {{name}}!
                     bin.display(),
                     log_file.display()
                 );
-                println!("🚀 Starting indexing in background. Log: {}", log_file.display());
+                println!(
+                    "🚀 Starting indexing in background. Log: {}",
+                    log_file.display()
+                );
                 std::process::Command::new("bash")
                     .arg("-c")
                     .arg(command)
                     .spawn()?;
             } else {
-                let sense = specgen_core::sense::CodeSense::new(&root)?;
+                let database = "craft.db".to_string();
+                let db = specgen_core::db::Database::new(&database)?;
+                let sense = specgen_core::sense::CodeSense::new(&db, &root)?;
                 sense.index(&root)?;
             }
         }
         Commands::Search { query } => {
             let root = std::env::current_dir()?;
-            let sense = specgen_core::sense::CodeSense::new(&root)?;
+            let database = "craft.db".to_string();
+            let db = specgen_core::db::Database::new(&database)?;
+            let sense = specgen_core::sense::CodeSense::new(&db, &root)?;
             sense.search(&query)?;
         }
         Commands::Skill { cmd } => match cmd {
             SkillCommands::Distill { dir, script } => {
                 println!("🚀 Starting Skill Distillation via PyO3...");
                 let distiller = specgen_core::distiller::SkillDistiller::new(Path::new(&script))?;
-                
+
                 let walker = ignore::WalkBuilder::new(&dir).build();
                 let mut count = 0;
                 let mut slop_count = 0;
-                
+
                 for entry in walker.into_iter().filter_map(|e| e.ok()) {
-                    if entry.path().is_file() && (entry.path().ends_with("SKILL.md") || entry.path().ends_with("skill.md")) {
+                    if entry.path().is_file()
+                        && (entry.path().ends_with("SKILL.md")
+                            || entry.path().ends_with("skill.md"))
+                    {
                         count += 1;
                         let path = entry.path();
                         match distiller.analyze_file(path) {
                             Ok(meta) => {
                                 if meta.is_slop {
                                     slop_count += 1;
-                                    println!("🗑️  SLOP: {} (Score: {}/10) - {}", meta.name, meta.quality_score, path.display());
+                                    println!(
+                                        "🗑️  SLOP: {} (Score: {}/10) - {}",
+                                        meta.name,
+                                        meta.quality_score,
+                                        path.display()
+                                    );
                                 } else {
-                                    println!("✅ KEEP: {} (Tags: {:?}) - {}", meta.name, meta.tags, path.display());
+                                    println!(
+                                        "✅ KEEP: {} (Tags: {:?}) - {}",
+                                        meta.name,
+                                        meta.tags,
+                                        path.display()
+                                    );
                                 }
                             }
                             Err(e) => {
@@ -747,6 +820,29 @@ Hello, {{name}}!
                     }
                 }
                 println!("\n📊 Distillation Complete: Processed {} files, found {} low-quality (slop) skills.", count, slop_count);
+            }
+            SkillCommands::List => {
+                let database = "craft.db".to_string(); // Assuming a default database
+                if !Path::new(&database).exists() {
+                    anyhow::bail!(
+                        "Database file `{}` not found. Please run `specgen db init` first.",
+                        database
+                    );
+                }
+                let db = Database::new(&database)?;
+                let skills = db.list_skills()?;
+
+                if cli.json {
+                    println!("{}", serde_json::to_string_pretty(&skills)?);
+                } else {
+                    println!("Current Skills:");
+                    for skill in skills {
+                        println!(" - {}", skill);
+                    }
+                }
+            }
+            SkillCommands::Search { query } => {
+                println!("🚀 Searching for '{}' (not implemented yet)", query);
             }
         },
         Commands::Task { cmd } => match cmd {
@@ -778,40 +874,51 @@ Hello, {{name}}!
                 loop {
                     let tasks = delegator.list_tasks()?;
                     let pending: Vec<_> = tasks.iter().filter(|t| t.status == "todo").collect();
-                    
+
                     if !pending.is_empty() {
                         println!("🔄 Found {} pending tasks. Processing...", pending.len());
                     }
-                    
+
                     for task in pending.iter() {
                         println!("  → Running: {} (ID: {})", task.title, task.id);
-                        
+
                         // Mark as in_progress
                         if let Err(e) = delegator.update_status(&task.id, TaskStatus::InProgress) {
                             println!("  ⚠️  Failed to update status: {}", e);
                             continue;
                         }
-                        
+
                         // Execute the task as a shell command
-                        let output = std::process::Command::new("sh")
+                        // Security: reject task titles with shell metacharacters
+                        let forbidden = [";", "&&", "||", "`", "$(", "${", ">", "<", "|", "&"];
+                        if forbidden.iter().any(|c| task.title.contains(c)) {
+                            println!("  SECURITY: task title contains forbidden shell characters. Skipping.");
+                            println!("  Title: {}", task.title);
+                            continue;
+                        }
+
+                        let output = std::process::Command::new("bash")
                             .arg("-c")
                             .arg(&task.title)
                             .output();
-                        
+
                         let result = match output {
                             Ok(out) => {
                                 let stdout = String::from_utf8_lossy(&out.stdout);
                                 let stderr = String::from_utf8_lossy(&out.stderr);
                                 let success = out.status.success();
-                                
-                                println!("  Status: {}", if success { "✅ done" } else { "❌ failed" });
+
+                                println!(
+                                    "  Status: {}",
+                                    if success { "✅ done" } else { "❌ failed" }
+                                );
                                 if !stdout.is_empty() {
                                     println!("  stdout: {}", stdout.trim());
                                 }
                                 if !stderr.is_empty() {
                                     println!("  stderr: {}", stderr.trim());
                                 }
-                                
+
                                 success
                             }
                             Err(e) => {
@@ -819,7 +926,7 @@ Hello, {{name}}!
                                 false
                             }
                         };
-                        
+
                         // Update final status
                         let final_status = if result {
                             TaskStatus::Done
@@ -830,7 +937,7 @@ Hello, {{name}}!
                             println!("  ⚠️  Failed to update final status: {}", e);
                         }
                     }
-                    
+
                     std::thread::sleep(std::time::Duration::from_secs(interval));
                 }
             }
@@ -843,13 +950,20 @@ Hello, {{name}}!
                 if patch.is_empty() {
                     println!("✨ No changes to sync.");
                 } else {
-                    println!("🚀 Pushing patch to remote: {}", endpoint.as_deref().unwrap_or("Kilocode Gateway"));
-                    let result = specgen_core::sync::SyncManager::send_patch(&patch, endpoint.as_deref())?;
+                    println!(
+                        "🚀 Pushing patch to remote: {}",
+                        endpoint.as_deref().unwrap_or("Kilocode Gateway")
+                    );
+                    let result =
+                        specgen_core::sync::SyncManager::send_patch(&patch, endpoint.as_deref())?;
                     println!("✅ Sync packet sent. Server response:");
-                    println!("{}", serde_json::to_string_pretty(&result).unwrap_or_default());
+                    println!(
+                        "{}",
+                        serde_json::to_string_pretty(&result).unwrap_or_default()
+                    );
                 }
             }
-        },
+        }
         Commands::Cron { cmd } => match cmd {
             CronCommands::Add { command, time } => {
                 // Validate time format HH:MM
@@ -865,13 +979,14 @@ Hello, {{name}}!
                 let cron_entry = format!("{} {} * * * {}", min, hour, command);
 
                 // Read existing crontab
-                let existing = match std::process::Command::new("crontab")
-                    .arg("-l")
-                    .output()
-                {
+                let existing = match std::process::Command::new("crontab").arg("-l").output() {
                     Ok(out) => {
                         let s = String::from_utf8_lossy(&out.stdout);
-                        if out.status.success() { s.to_string() } else { "".to_string() }
+                        if out.status.success() {
+                            s.to_string()
+                        } else {
+                            "".to_string()
+                        }
                     }
                     Err(_) => "".to_string(),
                 };
@@ -901,7 +1016,10 @@ Hello, {{name}}!
                 }
                 let status = child.wait()?;
                 if status.success() {
-                    println!("✅ Cron job installed: '{}' at {} (min hour)", command, time);
+                    println!(
+                        "✅ Cron job installed: '{}' at {} (min hour)",
+                        command, time
+                    );
                 } else {
                     anyhow::bail!("crontab installation failed");
                 }
@@ -938,57 +1056,105 @@ Hello, {{name}}!
                     println!("Cancelled.");
                 }
             }
-        }
+        },
         Commands::Status { database } => {
-            println!("📊 Project Status");
+            let mut status_data = serde_json::json!({
+                "templates": { "status": "NOT FOUND", "count": 0 },
+                "database": { "status": "NOT FOUND" },
+                "search_index": { "status": "NOT INDEXED" },
+                "mcp_server": { "status": "NOT FOUND" },
+            });
 
             // Templates
             let template_count = std::fs::read_dir("templates")
                 .map(|d| d.filter_map(|e| e.ok()).count())
                 .unwrap_or(0);
-            println!(
-                "   - Template Engine: READY ({} templates found)",
-                template_count
-            );
+            if template_count > 0 {
+                status_data["templates"] = serde_json::json!({
+                    "status": "READY",
+                    "count": template_count
+                });
+            }
 
             // Database
             if Path::new(&database).exists() {
-                let conn = craft_local_db::db::open(&database)?;
-                let table_exists: bool = conn.query_row(
-                    "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='collections'",
-                    [],
-                    |r| r.get::<_, i32>(0).map(|c| c > 0)
-                ).unwrap_or(false);
-
-                if table_exists {
-                    let coll_count: i32 =
-                        conn.query_row("SELECT COUNT(*) FROM collections", [], |r| r.get(0))?;
-                    println!(
-                        "   - Database: READY (`{}`, {} collections initialized)",
-                        database, coll_count
-                    );
+                if let Ok(db) = Database::new(&database) {
+                    if let Ok(table_exists) = db.table_exists("collections") {
+                        if table_exists {
+                            if let Ok(coll_count) = db.count_table_rows("collections") {
+                                status_data["database"] = serde_json::json!({
+                                    "status": "READY",
+                                    "path": database,
+                                    "collections_initialized": coll_count
+                                });
+                            }
+                        } else {
+                            status_data["database"] = serde_json::json!({
+                                "status": "UNINITIALIZED",
+                                "path": database,
+                                "message": "exists but schema is missing. Run `specgen db init`"
+                            });
+                        }
+                    }
                 } else {
-                    println!("   - Database: UNINITIALIZED (`{}` exists but schema is missing. Run `specgen db init`)", database);
+                    status_data["database"] = serde_json::json!({
+                        "status": "ERROR",
+                        "path": database,
+                        "message": "could not open database"
+                    });
                 }
-            } else {
-                println!("   - Database: NOT FOUND (Run `specgen db init`)");
             }
 
             // Search Index
             let sense_dir = Path::new(".sense");
             if sense_dir.exists() {
-                println!("   - Search Index: READY");
-            } else {
-                println!("   - Search Index: NOT INDEXED (run `specgen index`)");
+                status_data["search_index"] = serde_json::json!({ "status": "READY" });
             }
 
             // MCP Server
             let mcp_src = Path::new("app/src/mcp.ts");
             if mcp_src.exists() {
-                println!("   - MCP Server: CONFIGURED (source found)");
-            } else {
-                println!("   - MCP Server: NOT FOUND");
+                status_data["mcp_server"] = serde_json::json!({ "status": "CONFIGURED" });
             }
+
+            if cli.json {
+                println!("{}", serde_json::to_string_pretty(&status_data)?);
+            } else {
+                println!("📊 Project Status");
+                if status_data["templates"]["status"] == "READY" {
+                    println!(
+                        "   - Template Engine: READY ({} templates found)",
+                        status_data["templates"]["count"]
+                    );
+                } else {
+                    println!("   - Template Engine: NOT FOUND");
+                }
+                if status_data["database"]["status"] == "READY" {
+                    println!(
+                        "   - Database: READY (`{}`, {} collections initialized)",
+                        status_data["database"]["path"],
+                        status_data["database"]["collections_initialized"]
+                    );
+                } else if status_data["database"]["status"] == "UNINITIALIZED" {
+                    println!("   - Database: UNINITIALIZED (`{}` exists but schema is missing. Run `specgen db init`)", status_data["database"]["path"]);
+                } else {
+                    println!("   - Database: NOT FOUND (Run `specgen db init`)");
+                }
+                if status_data["search_index"]["status"] == "READY" {
+                    println!("   - Search Index: READY");
+                } else {
+                    println!("   - Search Index: NOT INDEXED (run `specgen index`)");
+                }
+                if status_data["mcp_server"]["status"] == "CONFIGURED" {
+                    println!("   - MCP Server: CONFIGURED (source found)");
+                } else {
+                    println!("   - MCP Server: NOT FOUND");
+                }
+            }
+        }
+        Commands::Serve { port } => {
+            println!("🚀 Starting Specgen API server on port {}...", port);
+            specgen_api::run_server(port).await?;
         }
         Commands::Memory { cmd } => match cmd {
             MemoryCommands::List {
@@ -996,7 +1162,8 @@ Hello, {{name}}!
                 scope,
                 format,
             } => {
-                let store = specgen_core::memory::MemoryStore::new(&database)?;
+                let db = specgen_core::db::Database::new(&database)?;
+                let store = specgen_core::memory::MemoryStore::new(&db);
                 let query = specgen_core::memory::MemoryQuery {
                     scope,
                     ..Default::default()
@@ -1034,20 +1201,25 @@ Hello, {{name}}!
                 database,
                 scope,
                 category,
+                topic,
                 key,
                 value,
             } => {
-                let store = specgen_core::memory::MemoryStore::new(&database)?;
+                let db = specgen_core::db::Database::new(&database)?;
+                let store = specgen_core::memory::MemoryStore::new(&db);
 
-                let scope_enum = specgen_core::memory::string_to_memory_scope(&scope)
+                let scope_enum = specgen_core::memory::string_to_scope(&scope)
                     .ok_or_else(|| anyhow::anyhow!("Invalid scope: {}", scope))?;
-                let category_enum = specgen_core::memory::string_to_memory_category(&category)
+                let category_enum = specgen_core::memory::string_to_category(&category)
                     .ok_or_else(|| anyhow::anyhow!("Invalid category: {}", category))?;
+                let topic_enum = specgen_core::memory::string_to_topic(&topic)
+                    .ok_or_else(|| anyhow::anyhow!("Invalid topic: {}. Allowed: LEARN, WORK, TOOL, INTEREST, PROJECT, IDENTIFY", topic))?;
 
-                let entry = specgen_core::bl1nk::MemoryEntry {
+                let entry = specgen_core::models::MemoryEntry {
                     id: None,
                     scope: scope_enum as i32,
                     category: category_enum as i32,
+                    topic: topic_enum as i32,
                     key,
                     value,
                     source: None,
@@ -1067,10 +1239,124 @@ Hello, {{name}}!
                 println!("✅ Memory entry written to `{}`", database);
             }
         },
+        Commands::Guardrail { cmd } => match cmd {
+            GuardrailCommands::Show => {
+                let rules = specgen_core::guardrail::load_active_rules()?;
+                println!("Active Guardrail Rules:");
+                println!(" - ภาษาตอบกลับ: {}", rules.response_language);
+                println!(" - ภาษา Doc: {}", rules.doc_language);
+                println!(" - Markers: {:?}", rules.required_markers);
+                println!(" - Memory Topics: {:?}", rules.memory_topics);
+            }
+            GuardrailCommands::Apply { name } => {
+                let pack = specgen_core::guardrail::apply_pack(&name)?;
+                println!("✅ Applied guardrail pack: {}", pack.name);
+            }
+            GuardrailCommands::List => {
+                let packs = specgen_core::guardrail::get_builtin_packs();
+                println!("Available Guardrail Packs:");
+                for p in packs {
+                    println!(" - {} ({})", p.name, p.description);
+                }
+            }
+            GuardrailCommands::Create { name } => {
+                println!("🚀 Creating custom pack: {} (scaffold from default)", name);
+                specgen_core::guardrail::apply_pack("default")?;
+                println!("✅ Custom pack '{}' created and active", name);
+            }
+            GuardrailCommands::Reset => {
+                specgen_core::guardrail::reset_to_default()?;
+                println!("✅ Reverted to default guardrail rules");
+            }
+        },
         Commands::Schema => {
             println!("Schema: schema/template_schema.json");
-            println!("Version: 0.1.0");
+            println!("Version: {}", env!("CARGO_PKG_VERSION"));
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::Parser;
+
+    #[test]
+    fn parse_validate_command() {
+        let args = Cli::try_parse_from(["specgen", "validate", "test.toml"]);
+        assert!(args.is_ok());
+        let cli = args.unwrap();
+        match cli.command {
+            Commands::Validate { file, format } => {
+                assert_eq!(file, "test.toml");
+                assert!(format.is_none());
+            }
+            _ => panic!("expected Validate"),
+        }
+    }
+
+    #[test]
+    fn parse_validate_with_format() {
+        let args = Cli::try_parse_from(["specgen", "validate", "test.md", "--format", "md"]);
+        assert!(args.is_ok());
+        let cli = args.unwrap();
+        match cli.command {
+            Commands::Validate { file, format } => {
+                assert_eq!(file, "test.md");
+                assert_eq!(format.unwrap(), "md");
+            }
+            _ => panic!("expected Validate"),
+        }
+    }
+
+    #[test]
+    fn parse_generate_command() {
+        let args = Cli::try_parse_from([
+            "specgen",
+            "generate",
+            "my_template",
+            "--out",
+            "out.md",
+            "--var",
+            "name=test",
+        ]);
+        assert!(args.is_ok());
+        let cli = args.unwrap();
+        match cli.command {
+            Commands::Generate {
+                template, out, var, ..
+            } => {
+                assert_eq!(template, "my_template");
+                assert_eq!(out, Some("out.md".into()));
+                assert_eq!(var.len(), 1);
+            }
+            _ => panic!("expected Generate"),
+        }
+    }
+
+    #[test]
+    fn parse_json_flag_global() {
+        let args = Cli::try_parse_from(["specgen", "--json", "validate", "test.toml"]);
+        assert!(args.is_ok());
+        assert!(args.unwrap().json);
+    }
+
+    #[test]
+    fn parse_unknown_command_fails() {
+        let args = Cli::try_parse_from(["specgen", "nonexistent"]);
+        assert!(args.is_err());
+    }
+
+    #[test]
+    fn parse_db_init() {
+        let args = Cli::try_parse_from(["specgen", "db", "init"]);
+        assert!(args.is_ok());
+    }
+
+    #[test]
+    fn parse_status_command() {
+        let args = Cli::try_parse_from(["specgen", "status"]);
+        assert!(args.is_ok());
+    }
 }
