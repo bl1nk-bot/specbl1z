@@ -1,10 +1,10 @@
 use anyhow::{anyhow, Context, Result};
 use clap::{Parser, Subcommand, ValueEnum};
-use specgen_core::{
-    parse_template, render_markdown, task_delegator::TaskStatus, validate_template, RenderContext,
-    TemplateFormat, db::Database,
-};
 use specgen_core::markdown; // Moved markdown to its own import
+use specgen_core::{
+    db::Database, parse_template, render_markdown, task_delegator::TaskStatus, validate_template,
+    RenderContext, TemplateFormat,
+};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
@@ -648,11 +648,7 @@ Hello, {{name}}!
                     ),
                     (
                         "User",
-                        vec![
-                            ("Name", "text"),
-                            ("Email", "text"),
-                            ("Role", "text"),
-                        ],
+                        vec![("Name", "text"), ("Email", "text"), ("Role", "text")],
                     ),
                 ];
 
@@ -745,7 +741,7 @@ Hello, {{name}}!
         },
         Commands::Index { background } => {
             let root = std::env::current_dir()?;
-                let database = "craft.db".to_string();
+            let _database = "craft.db".to_string();
             if background {
                 let bin = std::env::current_exe()?;
                 let log_file = root.join("index.log");
@@ -1112,12 +1108,19 @@ Hello, {{name}}!
             } else {
                 println!("📊 Project Status");
                 if status_data["templates"]["status"] == "READY" {
-                    println!("   - Template Engine: READY ({} templates found)", status_data["templates"]["count"]);
+                    println!(
+                        "   - Template Engine: READY ({} templates found)",
+                        status_data["templates"]["count"]
+                    );
                 } else {
                     println!("   - Template Engine: NOT FOUND");
                 }
                 if status_data["database"]["status"] == "READY" {
-                    println!("   - Database: READY (`{}`, {} collections initialized)", status_data["database"]["path"], status_data["database"]["collections_initialized"]);
+                    println!(
+                        "   - Database: READY (`{}`, {} collections initialized)",
+                        status_data["database"]["path"],
+                        status_data["database"]["collections_initialized"]
+                    );
                 } else if status_data["database"]["status"] == "UNINITIALIZED" {
                     println!("   - Database: UNINITIALIZED (`{}` exists but schema is missing. Run `specgen db init`)", status_data["database"]["path"]);
                 } else {
@@ -1254,4 +1257,88 @@ Hello, {{name}}!
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::Parser;
+
+    #[test]
+    fn parse_validate_command() {
+        let args = Cli::try_parse_from(["specgen", "validate", "test.toml"]);
+        assert!(args.is_ok());
+        let cli = args.unwrap();
+        match cli.command {
+            Commands::Validate { file, format } => {
+                assert_eq!(file, "test.toml");
+                assert!(format.is_none());
+            }
+            _ => panic!("expected Validate"),
+        }
+    }
+
+    #[test]
+    fn parse_validate_with_format() {
+        let args = Cli::try_parse_from(["specgen", "validate", "test.md", "--format", "md"]);
+        assert!(args.is_ok());
+        let cli = args.unwrap();
+        match cli.command {
+            Commands::Validate { file, format } => {
+                assert_eq!(file, "test.md");
+                assert_eq!(format.unwrap(), "md");
+            }
+            _ => panic!("expected Validate"),
+        }
+    }
+
+    #[test]
+    fn parse_generate_command() {
+        let args = Cli::try_parse_from([
+            "specgen",
+            "generate",
+            "my_template",
+            "--out",
+            "out.md",
+            "--var",
+            "name=test",
+        ]);
+        assert!(args.is_ok());
+        let cli = args.unwrap();
+        match cli.command {
+            Commands::Generate {
+                template, out, var, ..
+            } => {
+                assert_eq!(template, "my_template");
+                assert_eq!(out, Some("out.md".into()));
+                assert_eq!(var.len(), 1);
+            }
+            _ => panic!("expected Generate"),
+        }
+    }
+
+    #[test]
+    fn parse_json_flag_global() {
+        let args = Cli::try_parse_from(["specgen", "--json", "validate", "test.toml"]);
+        assert!(args.is_ok());
+        assert!(args.unwrap().json);
+    }
+
+    #[test]
+    fn parse_unknown_command_fails() {
+        let args = Cli::try_parse_from(["specgen", "nonexistent"]);
+        assert!(args.is_err());
+    }
+
+    #[test]
+    fn parse_db_init() {
+        let args = Cli::try_parse_from(["specgen", "db", "init"]);
+        assert!(args.is_ok());
+    }
+
+    #[test]
+    fn parse_status_command() {
+        let args = Cli::try_parse_from(["specgen", "status"]);
+        assert!(args.is_ok());
+    }
 }
