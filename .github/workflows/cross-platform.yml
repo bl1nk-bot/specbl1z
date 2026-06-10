@@ -90,8 +90,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - name: Wait for build cache
-        run: sleep 20
       - run: bash scripts/integration-test.sh
 
   docker:
@@ -100,7 +98,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Wait for binary
-        run: sleep 10
       - run: docker build -f docker/platforms/debian.Dockerfile -t specgen:ci .
       - run: docker build -f docker/platforms/alpine.Dockerfile -t specgen:alpine-ci .

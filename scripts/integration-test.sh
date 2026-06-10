@@ -7,7 +7,7 @@ GREEN='\033[0;32m'; RED='\033[0;31m'; NC='\033[0m'
 pass() { echo -e "${GREEN}[PASS]${NC} $*"; }
 fail() { echo -e "${RED}[FAIL]${NC} $*"; exit 1; }
 
-BIN="${SPECGEN_BIN:-cargo run --}"
+BIN="${SPECGEN_BIN:-./target/release/specgen}"
 DB="data/test_integration.db"
 PORT="${TEST_PORT:-13999}"
 
@@ -16,12 +16,13 @@ cd "$(dirname "$0")/.."
 # ---- 1. Build ----
 echo "=== 1. Build ==="
 cargo build --workspace --release || fail "build failed"
+test -f "$BIN" || fail "binary not found at $BIN"
 pass "cargo build --release"
 
 # ---- 2. Clean DB ----
 echo "=== 2. Migrate ==="
 rm -f "$DB"
-cargo run -- db init --database "$DB" --force 2>&1 || fail "db init failed"
+"$BIN" db init 2>&1 || fail "db init failed"
 [ -f "$DB" ] || fail "database file not created"
 pass "db init + schema migration"
 
@@ -30,7 +31,7 @@ echo "=== 3. Validate ==="
 for tmpl in templates/*.toml templates/*.md templates/*.json ; do
     [ -f "$tmpl" ] || continue
     echo -n "  $tmpl ... "
-    if cargo run -- validate "$tmpl" 2>&1; then
+    if "$BIN" validate "$tmpl" 2>&1; then
         pass "validate $(basename $tmpl)"
     else
         fail "validate $(basename $tmpl)"
@@ -39,7 +40,7 @@ done
 
 # ---- 4. API server ----
 echo "=== 4. API Server ==="
-cargo run -- serve --port "$PORT" &
+"$BIN" serve --port "$PORT" &
 SERVER_PID=$!
 sleep 2
 
@@ -68,7 +69,7 @@ wait $SERVER_PID  || true
 
 # ---- 5. DB Status ----
 echo "=== 5. DB Status ==="
-cargo run -- db status 2>&1 || fail "db status failed"
+"$BIN" db status 2>&1 || fail "db status failed"
 pass "db status"
 
 # ---- 6. Cleanup ----

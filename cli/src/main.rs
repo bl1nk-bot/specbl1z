@@ -119,13 +119,6 @@ enum Commands {
         #[arg(short, long, default_value = "craft.db")]
         database: String,
     },
-    /// Memory management
-    /// Start the Specgen API server
-    Serve {
-        /// Port to listen on
-        #[arg(short, long, default_value = "3000")]
-        port: u16,
-    },
     Memory {
         #[command(subcommand)]
         cmd: MemoryCommands,
@@ -896,7 +889,15 @@ Hello, {{name}}!
                         }
 
                         // Execute the task as a shell command
-                        let output = std::process::Command::new("sh")
+                        // Security: reject task titles with shell metacharacters
+                        let forbidden = [";", "&&", "||", "`", "$(", "${", ">", "<", "|", "&"];
+                        if forbidden.iter().any(|c| task.title.contains(c)) {
+                            println!("  SECURITY: task title contains forbidden shell characters. Skipping.");
+                            println!("  Title: {}", task.title);
+                            continue;
+                        }
+
+                        let output = std::process::Command::new("bash")
                             .arg("-c")
                             .arg(&task.title)
                             .output();
