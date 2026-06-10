@@ -119,7 +119,8 @@ export default async function daytonaPlugin(
 
           for (const cmd of [
             "git add .",
-            `git commit -m "${args.message}"`,
+          let sanitized = args.message.replace("\"", "\\\"");
+          let cmd = `git commit -m "${sanitized}"`;
             `git push origin ${args.branch}`,
           ]) {
             const out = await exec(cmd)
