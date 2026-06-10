@@ -14,6 +14,12 @@ echo "Bumping version to $NEW_VERSION across the workspace..."
 # Update root Cargo.toml if it has a version (workspace usually doesn't, but check)
 # In this project, root Cargo.toml is a workspace only.
 
+# Update VERSION file
+if [ -f "VERSION" ]; then
+    echo "Updating VERSION file"
+    echo "$NEW_VERSION" > VERSION
+fi
+
 # Update crates
 crates=("core" "cli" "api" "sandbox")
 
@@ -29,6 +35,16 @@ done
 if [ -f "tools/triage/gh-bl1nk-triage" ]; then
     echo "Updating tools/triage/gh-bl1nk-triage"
     sed -i "s/^# Version: .*/# Version: $NEW_VERSION/" tools/triage/gh-bl1nk-triage
+fi
+
+# Update templates
+if [ -f "templates/spec-workflow.json" ]; then
+    echo "Updating templates/spec-workflow.json"
+    sed -i "s/\"version\": \".*\"/\"version\": \"$NEW_VERSION\"/" templates/spec-workflow.json
+fi
+if [ -f "templates/spec-workflow.toml" ]; then
+    echo "Updating templates/spec-workflow.toml"
+    sed -i "s/version = \".*\"/version = \"$NEW_VERSION\"/" templates/spec-workflow.toml
 fi
 
 # Update Cargo.lock
