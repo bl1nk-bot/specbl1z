@@ -55,6 +55,8 @@
 - [ ] README.md updated
 
 ## 🚧 กำลังทำ
+- [ ] Design & Implement SessionDB (FTS5) in core/src/memory.rs
+- [ ] Scaffold core/src/loop.rs for Agentic State Machine
 
 ### Phase 7: Database Abstraction
 - [ ] trait DatabaseBackend

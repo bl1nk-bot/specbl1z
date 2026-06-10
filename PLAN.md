@@ -69,6 +69,10 @@
 | sandbox | 1 | - | 4 |
 | **Total** | **48** | **9** | **4** |
 
+## ⏳ Phase 7: Session Memory & Loop (Active)
+- [ ] Integrate SessionDB with FTS5 into core/memory
+- [ ] Implement core/src/loop.rs State Machine
+
 ## ⏳ Phase 7: Database Abstraction (next)
 - trait DatabaseBackend
 - sqlite.rs (rusqlite) — default
