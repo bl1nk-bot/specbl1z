@@ -25,6 +25,12 @@ for crate in "${crates[@]}"; do
     fi
 done
 
+# Update gh-extension
+if [ -f "tools/triage/gh-bl1nk-triage" ]; then
+    echo "Updating tools/triage/gh-bl1nk-triage"
+    sed -i "s/^# Version: .*/# Version: $NEW_VERSION/" tools/triage/gh-bl1nk-triage
+fi
+
 # Update Cargo.lock
 cargo check
 
