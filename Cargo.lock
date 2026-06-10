@@ -2028,7 +2028,7 @@ dependencies = [
 
 [[package]]
 name = "specgen"
-version = "0.1.0"
+version = "3.1.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -2040,7 +2040,7 @@ dependencies = [
 
 [[package]]
 name = "specgen-api"
-version = "0.1.0"
+version = "3.1.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -2056,7 +2056,7 @@ dependencies = [
 
 [[package]]
 name = "specgen-core"
-version = "0.1.0"
+version = "3.1.0"
 dependencies = [
  "anyhow",
  "bincode",
@@ -2080,7 +2080,7 @@ dependencies = [
 
 [[package]]
 name = "specgen-sandbox"
-version = "0.1.0"
+version = "3.1.0"
 dependencies = [
  "anyhow",
  "base64",
