@@ -1,0 +1,52 @@
+# specgen multi-platform test matrix
+# Run: docker compose -f docker/docker-compose.yml build
+#   or: docker compose -f docker/docker-compose.yml up --abort-on-container-exit
+
+services:
+  debian:
+    build:
+      context: ..
+      dockerfile: docker/platforms/debian.Dockerfile
+    image: specgen:debian
+
+  alpine:
+    build:
+      context: ..
+      dockerfile: docker/platforms/alpine.Dockerfile
+    image: specgen:alpine
+
+  android:
+    build:
+      context: ..
+      dockerfile: docker/platforms/android.Dockerfile
+    image: specgen:android
+
+  bare:
+    build:
+      context: ..
+      dockerfile: docker/platforms/bare.Dockerfile
+    image: specgen:bare
+
+  msrv-1.70:
+    build:
+      context: ..
+      dockerfile: docker/platforms/msrv.Dockerfile
+      args:
+        RUST_VERSION: "1.70"
+    image: specgen:msrv-1.70
+
+  msrv-1.75:
+    build:
+      context: ..
+      dockerfile: docker/platforms/msrv.Dockerfile
+      args:
+        RUST_VERSION: "1.75"
+    image: specgen:msrv-1.75
+
+  msrv-1.80:
+    build:
+      context: ..
+      dockerfile: docker/platforms/msrv.Dockerfile
+      args:
+        RUST_VERSION: "1.80"
+    image: specgen:msrv-1.80

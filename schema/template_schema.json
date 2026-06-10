@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "WorkflowTemplate",
+  "description": "Standard schema for structured workflow prompts with XML-like tags, designed for agent instruction.",
+  "type": "object",
+  "required": ["workflow", "output_template"],
+  "properties": {
+    "workflow": {
+      "type": "object",
+      "required": ["title", "restart", "rules", "steps", "loop_restart"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Human-readable title for the workflow"
+        },
+        "restart": {
+          "type": "string",
+          "description": "ID of the step to restart from on loop"
+        },
+        "rules": {
+          "type": "string",
+          "description": "Markdown-formatted rules or preconditions"
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "critical", "content"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique step identifier, e.g., '0', '1A'"
+              },
+              "critical": {
+                "type": "boolean",
+                "description": "Whether this step is critical and must not be skipped"
+              },
+              "content": {
+                "type": "string",
+                "description": "Markdown content of the step, including sub-lists"
+              },
+              "next": {
+                "type": ["string", "null"],
+                "description": "Explicit next step ID if not sequential, or null if end"
+              }
+            }
+          }
+        },
+        "loop_restart": {
+          "type": "string",
+          "description": "Instructions for what to do when restarting the loop, in Markdown"
+        }
+      }
+    },
+    "output_template": {
+      "type": "object",
+      "required": ["format", "content"],
+      "properties": {
+        "format": {
+          "type": "string",
+          "enum": ["markdown", "yaml", "json"],
+          "description": "Output format for the generated artifact"
+        },
+        "content": {
+          "type": "string",
+          "description": "Raw template content (e.g., Markdown block) with placeholders"
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "Schema version this template conforms to"
+        },
+        "author": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

@@ -1,69 +1,73 @@
-# Specgen Tasks
+# Specgen Tasks — v3.1
 
 ## ✅ เสร็จแล้ว
 
-- [x] Repo cleanup (ชื่อ specgen ขึ้นใหม่, trims nested dirs)
-- [x] CI/CD workflow (GitHub Actions)
-- [x] กำจัด warnings + format (`cargo clippy`, `.rustfmt.toml`)
-- [x] Workspace `resolver = "2"`
-- [x] การทดสอบ (46 unit + 9 integration ✅ ผ่าน)
-- [x] CLI scaffold ครบ (`validate`/`generate`/`convert`/`db`/`rule`/`agent`/`index`/`search`/`sync`)
-- [x] Open Bridge (`--json` flag)
-- [x] Feature: `new` command, template helpers, JSON/YAML output
-- [x] ข้อมูลที่มีอยู่ confirmed:
-  - core/src (14 files: db/memory/parser/renderer/validator/models/rules_engine/sync/task_delegator/distiller/markdown)
-  - cli/src/main.rs (1188 lines)
-  - server/ (ตำแหน่ง)
-  - model/engine/ (ไฟล์ชุด dead code น่าลบ)
+### Cleanup & Structure
+- [x] Dead code removed (model/engine/, model/, logs/, tests/)
+- [x] Docs consolidated (CLAUDE.md, GEMINI.md → @AGENTS.md stubs)
+- [x] Structure flattened (backend/core→core, backend/api→api, app/cli→cli)
+- [x] Paths fixed (Cargo.toml, config.toml, db.rs, api/lib.rs)
+- [x] Dependencies cleaned (sqlite-vec removed)
+
+### DevOps
+- [x] .gitignore fixed
+- [x] clippy.toml + rust-toolchain.toml
+- [x] Makefile (16 targets: all, check, test, lint, fmt, build, release, setup, wizard, bench, docker-*)
+- [x] Git hooks (pre-commit: devops.sh, commit-msg: [MARKER] format)
+- [x] rust-ci.yml (cache + lockfile check)
+- [x] cross-platform.yml (Linux, macOS, Android, MSRV, Docker, integration)
+- [x] release.yml (linux-amd64 + android-arm64 + sha256)
+- [x] dependabot.yml (cargo weekly)
+- [x] .github/prompts/ (anti-slop, auto-doc, dead-code-hunter, security-audit)
+
+### Build Fixes
+- [x] 8 missing Database methods added (create_document, list_documents, create_collection, add_property, list_agents, list_skills, table_exists, count_table_rows)
+- [x] All clippy warnings fixed
+- [x] All formatting fixed
+
+### Sandbox SDK
+- [x] sandbox/ Rust crate (Daytona + Modal + Webhook)
+- [x] .opencode/ TypeScript plugins + skills
+- [x] Benchmarks (criterion: serialize, deserialize, create)
+
+### Cross-Platform
+- [x] scripts/setup.sh (6 platforms)
+- [x] scripts/wizard.sh (interactive 5-step)
+- [x] scripts/integration-test.sh (real-world pipeline)
+- [x] Docker images (debian, alpine, android, bare, msrv)
+- [x] docker-compose.yml (7 services)
+
+### Testing
+- [x] 57 tests total (7 cli + 4 api + 36 core + 9 integration + 1 sandbox)
+- [x] 4 benchmarks
+- [x] cargo check + test + clippy + fmt all pass
+
+### Documentation
+- [x] SPEC.md updated (v3.1)
+- [x] PLAN.md updated
+- [x] TODO.md updated
+- [ ] README.md updated
 
 ## 🚧 กำลังทำ
 
-### Phase 1: รักษาฐาน (foundation) — ~60%
+### Phase 7: Database Abstraction
+- [ ] trait DatabaseBackend
+- [ ] sqlite.rs (rusqlite)
+- [ ] mysql.rs (sqlx via feature flag)
+- [ ] config.toml backend selection
 
-- **ลบ dead code**:
-  - [ ] ลบ `model/engine/` (44 files, ~8KB)
-  - [ ] ลบ `core/src/models.rs` (duplicate types)
-  - [ ] ใส่ `validator.rs` ลง `parser::mod.rs` เดิม
+### Phase 8: Semantic Search
+- [ ] Ollama nomic-embed-text
+- [ ] Vector search via chunks table
 
-- **รวม storage**:
-  - [ ] design `core/src/storage.rs` (single SQLite adapter)
-  - [ ] migration script สำหรับ `db.rs` + `craft.db`
-
-- **Semantic Search**:
-  - [ ] ต่อ Ollama (nomic-embed-text)
-
-- **CLI completeness**:
-  - [ ] ใส่ handler ให้ stub verbs
-  - [ ] `specgen doctor` + `specgen setup`
-  - [ ] **Refactor CLI Architecture**: แยก `main.rs` ออกเป็น `src/commands/*.rs` (Command Pattern) เพื่อลดความซับซ้อน
-
-## 🎯 Documentation Cleanup (Just Completed)
-
-- [x] **TODO.md**: rewrite in Thai, simplify verbose blocks, structure for better readability
-  - 2025 bytes (vs. 10089 before)
-  - Prunes redundant text, keeps actionable status checkboxes
-
-- [x] **PLAN.md**: update to reflect current state (2025-05-15 baseline)
-  - 1907 bytes
-  - Removes unstarted obligations, phases clearly numbered
-
-- [x] **README.md**: simplifies architecture overview, status bars
-  - 2867 bytes (vs. 3689 before)
-  - 3-color summary (✅/🚧/⏳), concise commands
-
-- [x] **docs/ARCHITECTURE.md**: consolidate architecture explanation into clear Thai
-  - 2376 bytes
-  - High-level concepts (Open Bridge, Git-style versioning), file inventory
-  - Priors dead-code targets, migration flowicons aligned
-
-**Result**: All 4 docs now map to v3 baseline, no drift from spec.
-
-- [x] **GitHub Issue**: created ([#2](https://github.com/bl1nk-bot/specbl1z/issues/2)) entries the above work for archival
+### Phase 9: MCP Server
+- [ ] Rust MCP server crate
+- [ ] Direct FFI to core (< 50ms)
 
 ## ⏳ ยังไม่ทำ
 
-- **MCP server (Rust)** — ยังไม่ scaffold `mcp-server/` crate
-- **Remove craft crate** — เมื่อรวม storage เสร็จจึงลบ
-- **Policies directory** — 8 policy files (markers, versioning, memory, docs, env, review, security, prompt)
-- **Docs** — `docs/jules.md`, `docs/cookbook.md`, `docs/workflow.md`, `docs/handoff.md`, `docs/memory/import-map.md`, `docs/memory/tree.md`
-- **Future** — hybrid cloud sync, Template V2, agent async
+- MySQL via sqlx feature flag
+- policies/ directory (8 policy files)
+- Docs: jules.md, cookbook.md, workflow.md, handoff.md
+- Template V2, agent async
+- Hybrid cloud sync

@@ -1,66 +1,99 @@
-# Specgen แผนการพัฒนา
+# Specgen แผนการพัฒนา — v3.1
 
-## สถานะที่ตรวจสอบแล้ว (2025-05-15)
+## ✅ Phase 0-6: Baseline + Cleanup + DevOps (เสร็จแล้ว)
 
-```
-specgen/
-├── Cargo.toml          # [workspace] {"core","cli"}
-├── core/               # 14 files (parser/renderer/db/memory/rules_engine/sync/task_delegator/markdown...)
-├── cli/                # main.rs 1188 lines
-├── server/             # web dashboard (TS)
-├── model/engine/       # dead code target
-└── craft.db            # legacy DB
-```
+### Phase 0: Safety Baseline
+- git branch cleanup/reorg, cargo clean (ลบ 1GB)
+- stash uncommitted changes
 
-ไม่มี:
-- `mcp-server/` (ยังไม่สร้าง)
-- `storage.rs`
-- `policies/`
-- ด้าน docs เช่น `jules.md`, `cookbook.md` (ยังไม่จบ)
+### Phase 1: Delete Dead Code
+- model/engine/ — sovereign_engine crate (9 .rs files)
+- model/ — bl1nk conductor files, opencode.py, caches
+- logs/, tests/ (empty)
+- docs/ARCHITECT_V2.md, docs/PLAN_V2.md, PLAN-RESTRUCTURE.md
 
-## ✅ Phase 0: Baseline Stabilization
+### Phase 2: Doc Consolidation
+- CLAUDE.md + GEMINI.md → @AGENTS.md stubs
+- ยุบจาก ~18 docs เหลือ ~8
 
-- Workspace (core+cli), สคริปต์ QA (`scripts/devops.sh`), CI/CD, rules ที่มี, ทดสอบ 100% ✅
+### Phase 3: Structure Flatten
+- backend/core/ → core/
+- backend/api/ → api/
+- app/cli/ → cli/
+- backend/schema/ → schema/
+- backend/craft.db → data/craft.db
 
-## 🚧 Phase 1: foundation — ~60%
+### Phase 4: Path Fixes
+- Cargo.toml workspace members updated
+- All internal paths updated (Cargo.toml, config.toml, api/lib.rs, db.rs)
 
-### 1.1 ลบ dead code
-| Target | สถานะ |
-|---|---|
-| `model/engine/` | 1 Chart ✅ (ตรวจเจอแล้ว) |
-| `core/src/models.rs` | 1 Chart ✅ |
-| `validator.rs` | 1 Chart ✅ |
+### Phase 5: Dependency Cleanup
+- sqlite-vec removed (dead dep, 0 refs)
+- All deps verified as actually used
 
-### 1.2 รวม storage
-- [ ] design `storage.rs`
-- [ ] write migration (Craft + core to unified)
+### Phase 6: Fix Broken Build
+- Added 8 missing methods to core::Database
+- Fixed clippy errors, formatting
+- cargo check + test + clippy + fmt all pass
 
-### 1.3 Semantic Search
-- [ ] ต่อ Ollama nomic-embed-text
+### DevOps Infrastructure
+- .gitignore fixed
+- clippy.toml + rust-toolchain.toml
+- Makefile (16 targets)
+- rust-ci.yml (cache, Swatinem, lockfile check)
+- cross-platform.yml (Linux, macOS, Android, MSRV, Docker)
+- release.yml (multi-target binary)
+- dependabot.yml (cargo weekly)
+- .github/prompts/ (4 agent instructions)
+- Git hooks installed (pre-commit + commit-msg)
 
-### 1.4 CLI completeness
-- [ ] ใส่ handler verbs
-- [ ] 도 check doctor/setup
+### Sandbox SDK (OpenCode Integration)
+- sandbox/ Rust crate (Daytona + Modal + Webhook)
+- .opencode/ TypeScript plugins (Bun/macOS/Linux)
+- .opencode/skills/ (daytona + modal)
 
-## ⏳ Phase 2: Direct MCP — NOT STARTED
+### Cross-Platform
+- scripts/setup.sh (6 platforms: Termux, Debian, Alpine, Arch, macOS, Linux)
+- scripts/wizard.sh (interactive, 5 steps)
+- scripts/integration-test.sh (real-world pipeline)
+- Docker images: 5 platforms + docker-compose
+- Benchmarks: criterion (serialize, deserialize, create)
 
-- ทำ `mcp-server/` crate → call core ทันที
-- Benchmark latency <50ms (จาก TS spawn 150ms now)
-- Update conifg ให้ point toward rust binary
+## 🎯 Test Coverage
 
-## ⏳ Phase 3: Polish — NOT STARTED
+| Crate | Unit Tests | Integration | Benchmarks |
+|-------|-----------|-------------|------------|
+| core | 36 | 9 | - |
+| cli | 7 | - | - |
+| api | 4 | - | - |
+| sandbox | 1 | - | 4 |
+| **Total** | **48** | **9** | **4** |
 
-- Remove craft crate
-- policies, docs, hybrid cloud sync
+## ⏳ Phase 7: Database Abstraction (next)
+- trait DatabaseBackend
+- sqlite.rs (rusqlite) — default
+- mysql.rs (sqlx) — feature flag
+- Auto-detect via config.toml
 
-## มาตรฐานสำคัญ
+## ⏳ Phase 8: Semantic Search
+- Ollama nomic-embed-text integration
+- Vector search via chunks table
+
+## ⏳ Phase 9: MCP Server
+- Rust MCP server crate
+- Direct FFI to core (latency < 50ms)
+
+## มาตรฐาน
 
 ```bash
-cargo check --all        # ✅ ผ่านแล้ว
-cargo test --all          # ✅ 100%
+cargo check --workspace        # PASS
+cargo test --workspace          # PASS (57 tests)
+cargo clippy --workspace -- -D warnings  # PASS
+cargo fmt --all -- --check      # PASS
+cargo bench -p specgen-sandbox  # PASS (4 benchmarks)
 ```
 
-Target ในอนาคต:
-- MCP latency <50ms
-- Binary size <15MB (release)
-- Startup <200ms
+Target:
+- MCP latency < 50ms
+- Binary size < 15MB (release)
+- Startup < 200ms

@@ -1,102 +1,114 @@
-# Specgen — AI-Native Spec-Driven Development (v3)
+# Specgen — AI-Native Spec-Driven Development (v3.1)
 
-**สถานะ:** Phase 1 กำลังทำ (dead code audit ✓, storage unification pending)  
-**จำนวน file:**
-- 14 files ใน `core/src`
-- 1188 lines ใน `cli/src/main.rs`
-- server/ มีอยู่ (web dashboard)
-- `model/engine/` ยังอยู่ (dead code target)
-- `mcp-server/` ยังไม่มี
+สถานะ: Phase 6 เสร็จ ✓ | 57 tests | 4 benchmarks | 6 platforms
 
----
-
-## โครงสร้างปัจจุบัน
+## โครงสร้าง
 
 ```
 specgen/
-├── Cargo.toml          # [workspace] members: ["core", "cli"]
-├── core/               # 14 files
-│   ├── parser/, renderer/, db/, memory/, rules_engine/, sense/, sync/
-│   ├── task_delegator/, distiller/, markdown/, validator/, models.rs
-│   └── schema.rs
-├── cli/                # 1188 lines main.rs
-├── server/             # TypeScript/Hono web dashboard
-└── craft.db            # Legacy SQLite
+├── core/           # engine หลัก (16 .rs files)
+├── cli/            # CLI binary (7 tests)
+├── api/            # REST API server (4 tests)
+├── sandbox/        # OpenCode SDK Rust (1 test + 4 benchmarks)
+├── .opencode/      # OpenCode plugins (TypeScript)
+├── data/           # SQLite database
+├── docker/         # Multi-platform images (5 variants)
+│   └── platforms/  # debian, alpine, android, bare, msrv
+├── scripts/        # setup.sh, wizard.sh, devops.sh, integration-test.sh
+├── .github/        # CI/CD + prompts + dependabot
+└── docs/           # ARCHITECTURE.md, CHANGELOG.md
 ```
 
 ## Quick Start
 
 ```bash
-cargo build
-cargo run -p specgen -- validate path/to/template.json
-cargo run -p specgen -- generate MY_TEMPLATE -- to json
-cargo run -p specgen -- convert template.md --to json
-cargo run -p specgen -- memory list --json | jq '.[].key'
+# Bootstrap from zero (ทุก platform)
+bash scripts/setup.sh
+
+# หรือ interactive wizard
+bash scripts/wizard.sh
+
+# หรือ make
+make all       # check + test + lint + fmt
+make build     # debug build
+make release   # release build
+make bench     # benchmarks
 ```
-
-## สรุปสถานะ
-
-✅ **เสร็จแล้ว:**
-- Workspace core+cli
-- CLI scaffold, `--json` flag
-- Zero warnings
-- Tests 100%
-- Template helpers, output format, `convert`, Markdown round-trip server/, docs/ anchoring
-
-🚧 **กำลังทำ:**
-- Dead code removal (2 targets จับต้องแล้ว: models.rs + validator.rs)
-- Unified storage (plan design pending)
-- Semantic search (Ollama ยังไม่ต่อ)
-- CLI verbs implementation (parse/stubs)
-
-⏳ **ยังไม่ทำ:**
-- `mcp-server/` (Rust MCP binary)
-- Remove craft crate
-- `policies/` directory (8 files)
-- Docs (jules, cookbook, workflow, handoff, import-map, tree)
-
----
 
 ## Commands
 
 | Command | Purpose |
 |---|---|
-| `specgen validate <file>` | Verify template |
-| `specgen generate <id>` | Render output |
-| `specgen convert <file> --to json\|md\|toml` | Switch format |
-| `specgen db list / show / delete` | View Craft DB |
-| `specgen rule ...` | Rules management |
-| `specgen agent ...` | Agent tasks |
-| `specgen index build` | Rebuild index (Ollama) |
-| `specgen search <query>` | Semantic search |
-| `specgen sync` | Craft DB sync (cross-OS) |
-| `specgen new` | Scaffold new template |
-| `specgen doctor` | Checklist tools |
-| `specgen setup` | Install missing tools |
+| `specgen validate <file>` | Validate template |
+| `specgen generate <id> --out out.md` | Render template |
+| `specgen convert <file> --to json\|md\|toml` | Convert format |
+| `specgen db init\|status` | Database manage |
+| `specgen memory list --json` | Memory query |
+| `specgen status` | Project status |
+| `specgen guardrail` | Policy enforcement |
+| `specgen task add\|list` | Task management |
 
----
+## Sandbox SDK (OpenCode)
 
-## Specsup>
+```rust
+// Rust (Termux/ทุก platform)
+use specgen_sandbox::{Daytona, spin, exec};
 
-| File | Detail |
-|---|---|
-| [SPEC.md](./SPEC.md) | V3 vision, features |
-| [PLAN.md](./PLAN.md) | Roadmap 3 phases |
-| [TODO.md](./TODO.md) | Task list ✅/🚧/⏳ |
+let d = Daytona::from_env()?;
+let r = spin(&d, "https://github.com/bl1nk-bot/specbl1z.git", "main", "test")?;
+exec(&d, &r.sandbox_id.unwrap(), "make all")?;
+```
 
----
+```bash
+# OpenCode (Bun/macOS/Linux)
+opencode daytona:spin repoUrl=https://github.com/bl1nk-bot/specbl1z.git
+opencode daytona:exec sandboxId=<id> command="make all"
+```
+
+## CI/CD
+
+- **rust-ci.yml** — check, test, clippy, fmt, lockfile
+- **cross-platform.yml** — Linux, macOS, Android, MSRV (1.75/1.80/stable), Docker, integration
+- **release.yml** — linux-amd64 + android-arm64 binaries
+- **dependabot.yml** — cargo auto-updates ทุกสัปดาห์
+- **prompts/** — agent instructions (anti-slop, auto-doc, dead-code-hunter, security-audit)
+
+## Docker
+
+```bash
+make docker-build     # single platform (debian)
+make docker-all       # all 7 platforms via docker-compose
+```
+
+Images: debian, alpine (musl), android (cross-compile), bare (setup test), msrv (1.70/1.75/1.80)
 
 ## Build & Test
 
 ```bash
-cargo fmt
-cargo clippy -- -D warnings
-cargo test
-cargo build --release
-cargo run -p specgen -- --help
+cargo check --workspace                      # PASS
+cargo test --workspace                       # PASS (57 tests)
+cargo clippy --workspace -- -D warnings      # PASS
+cargo fmt --all -- --check                   # PASS
+cargo bench -p specgen-sandbox               # PASS (4 benchmarks)
 ```
 
----
+## Test Coverage
+
+| Crate | Unit | Integration | Benchmarks |
+|-------|------|-------------|------------|
+| core | 36 | 9 | - |
+| cli | 7 | - | - |
+| api | 4 | - | - |
+| sandbox | 1 | - | 4 |
+| **Total** | **48** | **9** | **4** |
+
+## Docs
+
+| File | Detail |
+|---|---|
+| [SPEC.md](./SPEC.md) | v3.1 specification |
+| [PLAN.md](./PLAN.md) | Development roadmap |
+| [TODO.md](./TODO.md) | Task list |
 
 **License:** MIT
-**Updated:** 2025-05-15  ✅
+**Updated:** 2025-06-10
