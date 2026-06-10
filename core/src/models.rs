@@ -138,8 +138,6 @@ pub enum MemoryTopic {
     TopicInterest = 3,
     TopicProject = 4,
     TopicIdentify = 5,
-    TopicIntest = 6,
-    TopicFm25 = 7,
 }
 
 impl TryFrom<i32> for MemoryTopic {
@@ -152,8 +150,6 @@ impl TryFrom<i32> for MemoryTopic {
             3 => Ok(MemoryTopic::TopicInterest),
             4 => Ok(MemoryTopic::TopicProject),
             5 => Ok(MemoryTopic::TopicIdentify),
-            6 => Ok(MemoryTopic::TopicIntest),
-            7 => Ok(MemoryTopic::TopicFm25),
             _ => Err(()),
         }
     }

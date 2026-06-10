@@ -1,0 +1,54 @@
+name: Question
+description: Ask a question about specgen
+title: "[QUESTION] "
+labels: ["Docs"]
+body:
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Topic
+      options:
+        - Setup & Installation
+        - CLI Usage
+        - Sandbox (Daytona/Modal)
+        - CI/CD
+        - Docker
+        - API
+        - Contributing
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What do you need help with?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What have you tried? What were you doing?
+      placeholder: |
+        OS: 
+        Rust version: 
+        Branch:
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Termux/Android (ARM64)
+        - Linux (x86_64)
+        - Linux (musl/Alpine)
+        - macOS (ARM64)
+        - macOS (x86_64)
+        - Windows (x86_64)
+        - Windows (WSL)
+        - Docker
+  - type: input
+    id: linear_ref
+    attributes:
+      label: Linear Issue (BNK-)
+      placeholder: BNK-

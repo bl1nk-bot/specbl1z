@@ -10,9 +10,9 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  # ---- Linux (x86_64) ----
+  # ---- Parallel: all platforms run simultaneously ----
   linux:
-    name: Linux (stable)
+    name: Linux (x86_64)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,9 +26,8 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo build --workspace --release
 
-  # ---- macOS ----
   macos:
-    name: macOS (stable)
+    name: macOS
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,9 +37,19 @@ jobs:
       - run: cargo test --workspace
       - run: cargo build --workspace --release
 
-  # ---- Android (cross-compile) ----
+  windows:
+    name: Windows (x86_64)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check --workspace --all-targets
+      - run: cargo test --workspace
+      - run: cargo build --workspace --release
+
   android:
-    name: Android ARM64 (cross)
+    name: Android ARM64
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -57,7 +66,6 @@ jobs:
       - run: cargo check --workspace --target aarch64-linux-android
       - run: cargo build --workspace --release --target aarch64-linux-android
 
-  # ---- MSRV Matrix ----
   msrv:
     name: MSRV ${{ matrix.rust }}
     runs-on: ubuntu-latest
@@ -73,21 +81,26 @@ jobs:
       - run: cargo check --workspace --all-targets
       - run: cargo test --workspace
 
-  # ---- Integration test (API server) ----
+  # ---- Sequential: needs build artifacts from linux ----
   integration:
     name: Integration Test
+    needs: [linux]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      - name: Wait for build cache
+        run: sleep 20
       - run: bash scripts/integration-test.sh
 
-  # ---- Docker build (smoke test) ----
   docker:
     name: Docker Build
+    needs: [linux]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Wait for binary
+        run: sleep 10
       - run: docker build -f docker/platforms/debian.Dockerfile -t specgen:ci .
       - run: docker build -f docker/platforms/alpine.Dockerfile -t specgen:alpine-ci .

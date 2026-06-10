@@ -1195,7 +1195,7 @@ Hello, {{name}}!
                 let category_enum = specgen_core::memory::string_to_category(&category)
                     .ok_or_else(|| anyhow::anyhow!("Invalid category: {}", category))?;
                 let topic_enum = specgen_core::memory::string_to_topic(&topic)
-                    .ok_or_else(|| anyhow::anyhow!("Invalid topic: {}. Allowed: LEARN, WORK, TOOL, INTEREST, PROJECT, IDENTIFY, INTEST, FM25", topic))?;
+                    .ok_or_else(|| anyhow::anyhow!("Invalid topic: {}. Allowed: LEARN, WORK, TOOL, INTEREST, PROJECT, IDENTIFY", topic))?;
 
                 let entry = specgen_core::models::MemoryEntry {
                     id: None,

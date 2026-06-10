@@ -224,8 +224,6 @@ pub fn topic_to_string(topic: i32) -> Result<String> {
         MemoryTopic::TopicInterest => Ok("INTEREST".into()),
         MemoryTopic::TopicProject => Ok("PROJECT".into()),
         MemoryTopic::TopicIdentify => Ok("IDENTIFY".into()),
-        MemoryTopic::TopicIntest => Ok("INTEST".into()),
-        MemoryTopic::TopicFm25 => Ok("FM25".into()),
     }
 }
 
@@ -237,8 +235,6 @@ pub fn string_to_topic(topic: &str) -> Option<MemoryTopic> {
         "INTEREST" => Some(MemoryTopic::TopicInterest),
         "PROJECT" => Some(MemoryTopic::TopicProject),
         "IDENTIFY" => Some(MemoryTopic::TopicIdentify),
-        "INTEST" => Some(MemoryTopic::TopicIntest),
-        "FM25" => Some(MemoryTopic::TopicFm25),
         _ => None,
     }
 }
