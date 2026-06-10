@@ -231,7 +231,8 @@ pub fn sync<T: SandboxProvider>(
 ) -> Result<SandboxResult> {
     let cmds = [
         "git add .",
-        &format!("git commit -m \"{}\"", message),
+        let sanitized = message.replace('\"', "\\\"");
+        &format!("git commit -m \"{}\"", sanitized),
         &format!("git push origin {}", branch),
     ];
 
