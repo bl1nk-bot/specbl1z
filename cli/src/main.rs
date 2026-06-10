@@ -1253,7 +1253,7 @@ Hello, {{name}}!
         },
         Commands::Schema => {
             println!("Schema: schema/template_schema.json");
-            println!("Version: 0.1.0");
+            println!("Version: {}", env!("CARGO_PKG_VERSION"));
         }
     }
     Ok(())
