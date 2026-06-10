@@ -13,3 +13,6 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 anyhow = "1"
 specgen-core = { path = "../core" }
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
