@@ -35,6 +35,7 @@
 - **CLI completeness**:
   - [ ] ใส่ handler ให้ stub verbs
   - [ ] `specgen doctor` + `specgen setup`
+  - [ ] **Refactor CLI Architecture**: แยก `main.rs` ออกเป็น `src/commands/*.rs` (Command Pattern) เพื่อลดความซับซ้อน
 
 ## 🎯 Documentation Cleanup (Just Completed)
 

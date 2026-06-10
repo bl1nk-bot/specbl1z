@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            suffix: linux-amd64
+          - os: ubuntu-latest
+            target: aarch64-linux-android
+            suffix: android-arm64
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build release
+        run: cargo build --workspace --release --target ${{ matrix.target }}
+
+      - name: Package binary
+        run: |
+          BIN_NAME="specgen-${{ github.ref_name }}-${{ matrix.suffix }}"
+          mkdir -p release
+          cp target/${{ matrix.target }}/release/specgen "release/$BIN_NAME"
+          sha256sum "release/$BIN_NAME" > "release/$BIN_NAME.sha256"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: specgen-${{ matrix.suffix }}
+          path: release/
+
+  publish:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: specgen-*
+          merge-multiple: true
+          path: release/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          generate_release_notes: true
