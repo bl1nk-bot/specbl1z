@@ -1,6 +1,6 @@
 /target
-# Cargo.lock - Generally tracked for binary apps, but following current preference
-Cargo.lock
+# Cargo.lock tracked for binary app (workspace consistency)
+# Cargo.lock
 
 # IDEs
 .idea/
@@ -13,20 +13,18 @@ Cargo.lock
 Thumbs.db
 
 # Databases & Persistence
-# craft.db is now tracked to allow syncing between environments
+# craft.db is tracked under data/ for cross-env sync
 *.db-shm
 *.db-wal
 .sense/
 
 # Logs
-logs/
 *.log
 
-# Node.js
+# Node.js (future server/)
 node_modules/
 dist/
 
 # Secrets
 .env
 .env.*
-craft.db

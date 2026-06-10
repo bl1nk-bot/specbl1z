@@ -1,6 +1,29 @@
 [workspace]
 resolver = "2"
 members = [
-    "backend/core",
-    "app/cli", "backend/api",
+    "core",
+    "cli",
+    "api",
+    "sandbox",
 ]
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+anyhow = "1"
+thiserror = "1"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+chrono = { version = "0.4", features = ["serde", "clock"] }
+uuid = { version = "1", features = ["v4"] }
+ignore = "0.4"
+regex = "1"
+toml = "0.8"
+colored = "2"
+pulldown-cmark = "0.10"
+quick-xml = { version = "0.37", features = ["escape-html"] }
+bincode = "1"
+rusqlite = { version = "0.32", features = ["bundled"] }
+reqwest = { version = "0.12", features = ["json", "blocking"] }
+pyo3 = { version = "0.23", features = ["auto-initialize"] }

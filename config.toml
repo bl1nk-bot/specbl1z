@@ -11,4 +11,4 @@ log_level = "info"
 
 [paths]
 tools_bin = "./bin"
-database = "./craft.db"
+database = "./data/craft.db"
