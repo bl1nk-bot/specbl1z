@@ -1,5 +1,4 @@
 ## Description
-<!-- What does this PR do? -->
 
 ## Type
 - [ ] feat — new feature
@@ -18,13 +17,20 @@
 - [ ] ci/cd
 - [ ] docker
 
+## Platform Verified
+- [ ] Termux/Android (ARM64)
+- [ ] Linux (x86_64)
+- [ ] Linux (musl/Alpine)
+- [ ] macOS (ARM64)
+- [ ] macOS (x86_64)
+- [ ] Windows (x86_64)
+- [ ] Docker
+
 ## Checklist
-- [ ] `cargo check --workspace` passes
-- [ ] `cargo test --workspace` passes (57 tests)
-- [ ] `cargo clippy --workspace --all-targets -- -D warnings` passes
-- [ ] `cargo fmt --all -- --check` passes
-- [ ] `make all` passes locally
-- [ ] Cross-platform CI matrix reviewed
+- [ ] `cargo check --workspace`
+- [ ] `cargo test --workspace` (57 tests)
+- [ ] `cargo clippy --workspace --all-targets -- -D warnings`
+- [ ] `cargo fmt --all -- --check`
 
 ## Related
 - Linear: BNK-

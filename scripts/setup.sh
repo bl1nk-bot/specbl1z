@@ -23,6 +23,8 @@ detect_platform() {
         esac
     elif [ "$(uname)" = "Darwin" ]; then
         echo "macos"
+    elif [ "$(uname -o 2>/dev/null)" = "Msys" ] || [ "$(uname -o 2>/dev/null)" = "Cygwin" ]; then
+        echo "windows"
     else
         echo "unknown"
     fi
@@ -59,6 +61,9 @@ install_system_deps() {
             log "installing macOS packages (homebrew)..."
             brew install ripgrep jq python 2>/dev/null || warn "some brew packages may have failed"
             ;;
+        windows)
+            warn "Windows detected. Install manually: git, python3, ripgrep, jq, rust via https://rustup.rs"
+            ;; 
         *)
             warn "unknown platform: install git, python3, ripgrep, jq manually"
             ;;
