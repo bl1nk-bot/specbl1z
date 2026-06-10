@@ -33,6 +33,7 @@ dist/
 # Secrets
 .env
 .env.*
+skill-log.json
 
 # Test artifacts
 test-skills/
