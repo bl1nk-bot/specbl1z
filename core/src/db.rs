@@ -234,6 +234,8 @@ impl Database {
     // --- Document / Collection / Agent / Skill Operations ---
     // =========================================================================
 
+    /// Create a new document with the given title.
+    /// Returns the document UUID.
     pub fn create_document(&self, title: &str) -> AnyhowResult<String> {
         let id = uuid::Uuid::new_v4().to_string();
         self.conn
@@ -245,6 +247,7 @@ impl Database {
         Ok(id)
     }
 
+    /// List all documents ordered by creation date.
     pub fn list_documents(&self) -> AnyhowResult<Vec<serde_json::Value>> {
         let mut stmt = self
             .conn
@@ -266,6 +269,8 @@ impl Database {
         Ok(results)
     }
 
+    /// Create a new collection within a document.
+    /// Returns the collection UUID.
     pub fn create_collection(&self, document_id: &str, name: &str) -> AnyhowResult<String> {
         let id = uuid::Uuid::new_v4().to_string();
         self.conn
@@ -277,6 +282,8 @@ impl Database {
         Ok(id)
     }
 
+    /// Add a property definition to a collection.
+    /// Returns the property UUID.
     pub fn add_property(
         &self,
         collection_id: &str,
@@ -292,6 +299,7 @@ impl Database {
         Ok(id)
     }
 
+    /// List all agents. Returns empty if agents table doesn't exist yet.
     pub fn list_agents(&self) -> AnyhowResult<Vec<serde_json::Value>> {
         let table_exists: bool = self
             .conn
@@ -325,6 +333,7 @@ impl Database {
         Ok(results)
     }
 
+    /// List all skills. Returns empty if skills table doesn't exist yet.
     pub fn list_skills(&self) -> AnyhowResult<Vec<serde_json::Value>> {
         let table_exists: bool = self
             .conn
@@ -359,6 +368,7 @@ impl Database {
         Ok(results)
     }
 
+    /// Check if a given table exists in the database.
     pub fn table_exists(&self, table_name: &str) -> AnyhowResult<bool> {
         let count: i32 = self
             .conn
@@ -371,6 +381,8 @@ impl Database {
         Ok(count > 0)
     }
 
+    /// Count the number of rows in a given table.
+    /// Table name is interpolated — only call with trusted input.
     pub fn count_table_rows(&self, table_name: &str) -> AnyhowResult<i64> {
         let sql = format!("SELECT COUNT(*) FROM \"{}\"", table_name.replace('"', ""));
         let count: i64 = self

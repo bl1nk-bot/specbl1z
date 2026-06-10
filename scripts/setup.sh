@@ -62,7 +62,16 @@ install_system_deps() {
             brew install ripgrep jq python 2>/dev/null || warn "some brew packages may have failed"
             ;;
         windows)
-            warn "Windows detected. Install manually: git, python3, ripgrep, jq, rust via https://rustup.rs"
+            warn "Windows detected."
+            if command -v scoop &>/dev/null; then
+                log "installing via scoop..."
+                scoop install rust git python ripgrep jq 2>/dev/null || true
+            elif command -v choco &>/dev/null; then
+                log "installing via chocolatey..."
+                choco install -y rust git python ripgrep jq 2>/dev/null || true
+            else
+                warn "Install manually: https://rustup.rs + git, python, ripgrep, jq"
+            fi
             ;; 
         *)
             warn "unknown platform: install git, python3, ripgrep, jq manually"
