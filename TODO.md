@@ -37,6 +37,12 @@
 - [x] Docker images (debian, alpine, android, bare, msrv)
 - [x] docker-compose.yml (7 services)
 
+### Release Management
+- [x] Root VERSION file
+- [x] scripts/bump-version.sh (multi-crate support)
+- [x] docs/CHANGELOG.md updated (v3.1.0)
+- [x] tools/triage/ version bump (v3.1.0) + CHANGELOG
+
 ### Testing
 - [x] 57 tests total (7 cli + 4 api + 36 core + 9 integration + 1 sandbox)
 - [x] 4 benchmarks
