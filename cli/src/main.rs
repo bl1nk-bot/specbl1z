@@ -21,6 +21,12 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Start the Specgen API server
+    Serve {
+        /// Port to listen on
+        #[arg(short, long, default_value = "3000")]
+        port: u16,
+    },
     /// Validate a template file (JSON, Markdown+XML, or TOML) against the schema
     Validate {
         /// Path to template file
@@ -1145,12 +1151,6 @@ Hello, {{name}}!
                 }
             }
         }
-    /// Start the Specgen API server
-    Serve {
-        /// Port to listen on
-        #[arg(short, long, default_value = "3000")]
-        port: u16,
-    },
         Commands::Serve { port } => {
             println!("🚀 Starting Specgen API server on port {}...", port);
             specgen_api::run_server(port).await?;

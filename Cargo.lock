@@ -2035,7 +2035,9 @@ dependencies = [
  "ignore",
  "serde_json",
  "serde_yaml",
+ "specgen-api",
  "specgen-core",
+ "tokio",
 ]
 
 [[package]]
