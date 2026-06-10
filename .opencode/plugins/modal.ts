@@ -87,7 +87,8 @@ export default definePlugin({
 
         for (const cmd of [
           "git add .",
-          `git commit -m "${message}"`,
+          let sanitized = message.replace("\"", "\\\"");
+          let cmd = format!("git commit -m \"{}\"", sanitized);
           `git push origin ${branch}`,
         ]) {
           await fetch(`https://api.modal.com/v1/sandbox/${sandboxId}/exec`, {
