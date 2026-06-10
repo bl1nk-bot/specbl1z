@@ -1,15 +1,15 @@
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
-use anyhow::{Result, Context};
-use std::path::Path;
 use std::fs;
+use std::path::Path;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GuardrailRules {
     pub response_language: String,     // e.g., "th", "en"
     pub doc_language: String,          // e.g., "th", "en"
     pub required_markers: Vec<String>, // e.g., ["[FIX]", "[TODO]"]
-    pub memory_topics: Vec<String>,    // Strict: ["LEARN", "WORK", "TOOL", "INTEREST", "PROJECT", "IDENTIFY"]
-    pub min_test_coverage: f32,        // e.g., 0.8 (80%)
+    pub memory_topics: Vec<String>, // Strict: ["LEARN", "WORK", "TOOL", "INTEREST", "PROJECT", "IDENTIFY"]
+    pub min_test_coverage: f32,     // e.g., 0.8 (80%)
     pub allow_auto_approval: bool,
     pub forbidden_patterns: Vec<String>,
 }
@@ -51,7 +51,8 @@ pub fn get_builtin_packs() -> Vec<GuardrailPack> {
     vec![
         GuardrailPack {
             name: "default".to_string(),
-            description: "Standard engineering guardrails with Thai language enforcement".to_string(),
+            description: "Standard engineering guardrails with Thai language enforcement"
+                .to_string(),
             rules: GuardrailRules::default(),
         },
         GuardrailPack {
@@ -108,7 +109,8 @@ pub fn load_active_rules() -> Result<GuardrailRules> {
 
 pub fn apply_pack(name: &str) -> Result<GuardrailPack> {
     let packs = get_builtin_packs();
-    let pack = packs.into_iter()
+    let pack = packs
+        .into_iter()
         .find(|p| p.name == name)
         .context(format!("Pack '{}' not found", name))?;
 

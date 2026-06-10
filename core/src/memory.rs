@@ -2,8 +2,8 @@ use anyhow::{anyhow, Context, Result};
 use rusqlite::params;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::models::{MemoryCategory, MemoryEntry, MemoryScope, MemoryTopic};
 use crate::db::Database;
+use crate::models::{MemoryCategory, MemoryEntry, MemoryScope, MemoryTopic};
 
 /// MemoryStore handles Agentic Memory using the unified Database.
 /// It supports scopes (global/project/session), confidence scoring, and audit logging.
@@ -116,9 +116,12 @@ impl<'a> MemoryStore<'a> {
             let tags_json: String = row.get(12)?;
             Ok(MemoryEntry {
                 id: Some(row.get(0)?),
-                scope: string_to_scope(&row.get::<_, String>(1)?).unwrap_or(MemoryScope::ScopeGlobal) as i32,
-                category: string_to_category(&row.get::<_, String>(2)?).unwrap_or(MemoryCategory::CategoryFact) as i32,
-                topic: string_to_topic(&row.get::<_, String>(3)?).unwrap_or(MemoryTopic::TopicLearn) as i32,
+                scope: string_to_scope(&row.get::<_, String>(1)?)
+                    .unwrap_or(MemoryScope::ScopeGlobal) as i32,
+                category: string_to_category(&row.get::<_, String>(2)?)
+                    .unwrap_or(MemoryCategory::CategoryFact) as i32,
+                topic: string_to_topic(&row.get::<_, String>(3)?).unwrap_or(MemoryTopic::TopicLearn)
+                    as i32,
                 key: row.get(4)?,
                 value: row.get(5)?,
                 source: row.get(6)?,
@@ -142,10 +145,17 @@ impl<'a> MemoryStore<'a> {
         Ok(results)
     }
 
-    fn log_audit(&self, entry_id: i64, op: &str, actor: &str, _old: Option<&MemoryEntry>, _new: Option<&MemoryEntry>) -> Result<()> {
+    fn log_audit(
+        &self,
+        entry_id: i64,
+        op: &str,
+        actor: &str,
+        _old: Option<&MemoryEntry>,
+        _new: Option<&MemoryEntry>,
+    ) -> Result<()> {
         let old_json: Option<String> = None;
         let new_json: Option<String> = None;
-        
+
         self.db.conn.execute(
             "INSERT INTO memory_audit_log (entry_id, operation, performed_by, old_value, new_value)
              VALUES (?1, ?2, ?3, ?4, ?5)",
@@ -233,6 +243,15 @@ pub fn string_to_topic(topic: &str) -> Option<MemoryTopic> {
     }
 }
 
+// Alias functions for backward compatibility
+pub fn string_to_memory_scope(s: &str) -> Option<MemoryScope> {
+    string_to_scope(s)
+}
+
+pub fn string_to_memory_category(s: &str) -> Option<MemoryCategory> {
+    string_to_category(s)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -272,19 +291,13 @@ mod tests {
         let id = store.insert(entry).unwrap();
         assert!(id > 0);
 
-        let query = MemoryQuery { scope: Some("project".into()), ..Default::default() };
+        let query = MemoryQuery {
+            scope: Some("project".into()),
+            ..Default::default()
+        };
         let results = store.query(&query).unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].key, "arch_rule");
         assert_eq!(results[0].topic, MemoryTopic::TopicProject as i32);
     }
-}
-
-// Alias functions for backward compatibility
-pub fn string_to_memory_scope(s: &str) -> Option<MemoryScope> {
-    string_to_scope(s)
-}
-
-pub fn string_to_memory_category(s: &str) -> Option<MemoryCategory> {
-    string_to_category(s)
 }

@@ -1,6 +1,6 @@
+use crate::db::Database;
 use anyhow::Result;
 use pulldown_cmark::{Event, Parser, Tag, TagEnd};
-use crate::db::Database;
 use uuid::Uuid;
 
 /// บล็อกที่ยังไม่ถูกเขียนลง DB
@@ -28,10 +28,14 @@ fn new_id() -> String {
 /// แยก frontmatter YAML (ระหว่าง `---`) และเนื้อหา Markdown
 fn split_frontmatter(input: &str) -> (Option<serde_yaml::Value>, String) {
     let trimmed = input.trim();
-    if let Some(rest) = trimmed.strip_prefix("---
-") {
-        if let Some((yaml_part, md)) = rest.split_once("---
-") {
+    if let Some(rest) = trimmed.strip_prefix(
+        "---
+",
+    ) {
+        if let Some((yaml_part, md)) = rest.split_once(
+            "---
+",
+        ) {
             if let Ok(meta) = serde_yaml::from_str::<serde_yaml::Value>(yaml_part) {
                 return (Some(meta), md.trim().to_string());
             }

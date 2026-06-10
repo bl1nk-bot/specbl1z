@@ -6,11 +6,11 @@ pub mod validator;
 
 pub mod db;
 pub mod distiller;
+pub mod guardrail;
 pub mod markdown; // Make markdown module public
 pub mod memory;
 pub mod models;
 pub mod rules_engine;
-pub mod guardrail;
 pub mod sync;
 pub mod task_delegator;
 use serde_json::{Map, Value};
