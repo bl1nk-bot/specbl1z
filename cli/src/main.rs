@@ -114,6 +114,12 @@ enum Commands {
         database: String,
     },
     /// Memory management
+    /// Start the Specgen API server
+    Serve {
+        /// Port to listen on
+        #[arg(short, long, default_value = "3000")]
+        port: u16,
+    },
     Memory {
         #[command(subcommand)]
         cmd: MemoryCommands,
@@ -339,7 +345,8 @@ fn parse_keyval(s: &str) -> Result<(String, String), String> {
     Ok((s[..pos].to_string(), s[pos + 1..].to_string()))
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
@@ -1137,6 +1144,16 @@ Hello, {{name}}!
                     println!("   - MCP Server: NOT FOUND");
                 }
             }
+        }
+    /// Start the Specgen API server
+    Serve {
+        /// Port to listen on
+        #[arg(short, long, default_value = "3000")]
+        port: u16,
+    },
+        Commands::Serve { port } => {
+            println!("🚀 Starting Specgen API server on port {}...", port);
+            specgen_api::run_server(port).await?;
         }
         Commands::Memory { cmd } => match cmd {
             MemoryCommands::List {

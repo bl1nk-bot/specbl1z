@@ -12,7 +12,7 @@ pub struct AppState {
     pub db: Mutex<Database>,
 }
 
-pub async fn run_server() -> anyhow::Result<()> {
+pub async fn run_server(port: u16) -> anyhow::Result<()> {
     // Database path relative to workspace root
     let db_path = "data/craft.db";
     let db = Database::new(db_path)?;
@@ -26,7 +26,7 @@ pub async fn run_server() -> anyhow::Result<()> {
         )
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await?;
     tracing::info!(
         "Specgen Rust Backend (Tiered Memory) listening on {}",
         listener.local_addr()?
