@@ -229,9 +229,9 @@ pub fn sync<T: SandboxProvider>(
     branch: &str,
     message: &str,
 ) -> Result<SandboxResult> {
+    let sanitized = message.replace('"', "\\\"");
     let cmds = [
         "git add .",
-        let sanitized = message.replace('\"', "\\\"");
         &format!("git commit -m \"{}\"", sanitized),
         &format!("git push origin {}", branch),
     ];
