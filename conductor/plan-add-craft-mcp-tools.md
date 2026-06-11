@@ -19,6 +19,7 @@ Update the TypeScript MCP server (`app/src/mcp.ts`) to register and handle a lar
     *   For the generic utilities (`run_shell_command`, `read_file`, `write_file`), we can implement them directly in Node.js within `mcp.ts` to save CLI overhead.
 
 ## Verification & Testing
+
 - Ensure the TypeScript code compiles.
 - Run the MCP server to verify it starts without errors.
 - Test `listTools` to ensure all new tools are exposed.
