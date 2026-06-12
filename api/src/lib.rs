@@ -35,14 +35,22 @@ pub async fn run_server(port: u16) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn query_memory_handler(State(state): State<Arc<AppState>>) -> Result<Json<Vec<MemoryEntry>>, (StatusCode, String)> {
+async fn query_memory_handler(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<Vec<MemoryEntry>>, (StatusCode, String)> {
     let db_lock = state.db.lock().map_err(|e| {
-        (StatusCode::INTERNAL_SERVER_ERROR, format!("Database lock error: {e}"))
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Database lock error: {e}"),
+        )
     })?;
     let store = MemoryStore::new(&db_lock);
     let query = MemoryQuery::default();
     let results = store.query(&query).map_err(|e| {
-        (StatusCode::INTERNAL_SERVER_ERROR, format!("Query error: {e}"))
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Query error: {e}"),
+        )
     })?;
     Ok(Json(results))
 }
@@ -52,7 +60,10 @@ async fn insert_memory_handler(
     Json(mut entry): Json<MemoryEntry>,
 ) -> Result<Json<Value>, (StatusCode, String)> {
     let db_lock = state.db.lock().map_err(|e| {
-        (StatusCode::INTERNAL_SERVER_ERROR, format!("Database lock error: {e}"))
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Database lock error: {e}"),
+        )
     })?;
     let store = MemoryStore::new(&db_lock);
 
@@ -68,7 +79,9 @@ async fn insert_memory_handler(
             "id": id,
             "policy_applied": "new_over_old_v3"
         }))),
-        Err(e) => Ok(Json(serde_json::json!({ "status": "error", "message": e.to_string() }))),
+        Err(e) => Ok(Json(serde_json::json!(
+            { "status": "error", "message": e.to_string() }
+        ))),
     }
 }
 
@@ -113,8 +126,10 @@ mod tests {
         let resp = app.oneshot(req).await.unwrap();
         // In-memory DB without migrations may return 500 — accept both
         let status = resp.status();
-        assert!(status == StatusCode::OK || status == StatusCode::INTERNAL_SERVER_ERROR,
-            "expected 200 or 500, got {status}");
+        assert!(
+            status == StatusCode::OK || status == StatusCode::INTERNAL_SERVER_ERROR,
+            "expected 200 or 500, got {status}"
+        );
     }
 
     #[tokio::test]
