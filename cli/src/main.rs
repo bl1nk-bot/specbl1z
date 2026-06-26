@@ -128,7 +128,7 @@ enum Commands {
         #[command(subcommand)]
         cmd: GuardrailCommands,
     },
-    /// Manage Skills via PyO3 integration
+    /// Manage Skills
     Skill {
         #[command(subcommand)]
         cmd: SkillCommands,
@@ -288,7 +288,7 @@ enum DbCommands {
 
 #[derive(Subcommand)]
 enum SkillCommands {
-    /// Distill and classify skills from a directory using PyO3
+    /// Distill and classify skills from a directory
     Distill {
         /// Directory to search for SKILL.md files
         #[arg(short, long)]
@@ -780,7 +780,7 @@ Hello, {{name}}!
         }
         Commands::Skill { cmd } => match cmd {
             SkillCommands::Distill { dir, script } => {
-                println!("🚀 Starting Skill Distillation via PyO3...");
+                println!("🚀 Starting Skill Distillation...");
                 let distiller = specgen_core::distiller::SkillDistiller::new(Path::new(&script))?;
 
                 let walker = ignore::WalkBuilder::new(&dir).build();
