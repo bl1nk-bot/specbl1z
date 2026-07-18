@@ -15,5 +15,5 @@ serde_yaml = "0.9"
 specgen-api = { path = "../api" }
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"
-colored = "2"
+colored = "3"
 ignore = "0.4"
