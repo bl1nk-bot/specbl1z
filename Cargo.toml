@@ -20,7 +20,7 @@ uuid = { version = "1", features = ["v4"] }
 ignore = "0.4"
 regex = "1"
 toml = "0.8"
-colored = "2"
+colored = "3"
 pulldown-cmark = "0.13"
 quick-xml = { version = "0.37", features = ["escape-html"] }
 bincode = "1"
