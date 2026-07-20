@@ -12,7 +12,7 @@ colored = "2"
 regex = "1"
 toml = "0.8"
 pulldown-cmark = "0.13" # Added dependency
-quick-xml = { version = "0.37", features = ["escape-html"] }
+quick-xml = { version = "0.41", features = ["escape-html"] }
 anyhow = "1"
 rusqlite = { version = "0.40", features = ["bundled", "serde_json"] }
 uuid = { version = "1", features = ["v4"] }
