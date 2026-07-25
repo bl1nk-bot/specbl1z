@@ -6,7 +6,7 @@
 
 ```
 specgen/
-├── core/           # engine หลัก (16 .rs files)
+├── core/           # engine หลัก (14 modules + parser/)
 ├── cli/            # CLI binary (7 tests)
 ├── api/            # REST API server (4 tests)
 ├── sandbox/        # OpenCode SDK Rust (1 test + 4 benchmarks)
@@ -15,6 +15,7 @@ specgen/
 ├── docker/         # Multi-platform images (5 variants)
 │   └── platforms/  # debian, alpine, android, bare, msrv
 ├── scripts/        # setup.sh, wizard.sh, devops.sh, integration-test.sh
+├── config.toml     # ตั้งค่า runtime
 ├── .github/        # CI/CD + prompts + dependabot
 └── docs/           # ARCHITECTURE.md, CHANGELOG.md
 ```
@@ -111,4 +112,4 @@ cargo bench -p specgen-sandbox               # PASS (4 benchmarks)
 | [TODO.md](./TODO.md) | Task list |
 
 **License:** MIT
-**Updated:** 2025-06-10
+**Updated:** 2026-07-25

@@ -1,70 +1,74 @@
-# สถาปัตยกรรม Specgen (v3)
+# สถาปัตยกรรม Specgen (v3.1)
 
-## แนวคิดหลัก: Open Bridge Architecture (ไม่ใช่ black box)
-- CLI เป็นสะพานที่โปร่งใสระหว่างผู้ใช้และ core
-- ทุก CLI command รองรับ `--json` (ใช้ `jq` / Python ต่อได้)
-- Rust: เร็ว ทนทาน
-- ไม่ spawn new process แต่ call core ทันที (FFI) → target <50ms
+## Open Bridge Architecture
+- CLI เป็นสะพานโปร่งใสระหว่างผู้ใช้กับ core engine
+- ทุก CLI command รองรับ `--json` สำหรับ machine-readable output
+- Rust: เร็ว ทนทาน — ไม่ spawn process, call core โดยตรง
+- 4 crates ใน workspace: `core` + `cli` + `api` + `sandbox`
 
-## Git-like versioning (แนวคิด โปรยงาน cross-OS)
+## โครงสร้างปัจจุบัน
+
+```
+specgen/
+├── core/           # engine หลัก
+│   ├── lib.rs
+│   ├── db.rs           # SQLite database abstraction
+│   ├── memory.rs       # Memory engine (CRUD + versioning)
+│   ├── parser/         # Template parser (markdown + toml)
+│   ├── renderer.rs     # Template renderer
+│   ├── validator.rs    # Schema validation
+│   ├── schema.rs       # JSON schema loader
+│   ├── models.rs       # Domain types
+│   ├── rules_engine.rs # Policy/rule evaluation
+│   ├── sync.rs         # Git-like versioning (LWW + conflict)
+│   ├── task_delegator.rs # Agent task management
+│   ├── distiller.rs    # Skill metadata extraction (stub)
+│   ├── guardrail.rs    # Policy enforcement
+│   ├── sense.rs        # Intent detection
+│   └── markdown.rs     # Markdown serialization
+├── cli/            # CLI binary
+│   └── src/main.rs     # ~1260 lines, 8 commands
+├── api/            # REST API server (Axum + Tokio)
+│   └── src/lib.rs      # 4 tests
+├── sandbox/        # OpenCode SDK Rust
+│   └── src/lib.rs      # Daytona + Modal + Webhook
+├── .opencode/      # OpenCode plugins (TypeScript)
+├── data/           # SQLite database
+├── docker/         # Multi-platform images
+├── scripts/        # setup.sh, wizard.sh, devops.sh
+├── .github/        # CI/CD workflows + agent prompts
+└── docs/           # Documentation
+```
+
+## Versioning (Git-like)
 ```
 Row → insert-only immutable
 Hash (SHA-256) + parent_id
 Last-Write-Wins (LWW)
 
-<--- conflict detected (same parent, diff hash)
+conflict detected (same parent, diff hash)
   → `conflicts` table → manual or auto resolve
 ```
 
-## ไฟล์ที่มีอยู่ (Current State)
+## การสื่อสารระหว่าง Crates
+
 ```
-specgen/
-├── Cargo.toml          # [workspace] core + cli
-├── core/src/           # 14 files:
-│   ├── lib.rs, parser/(), renderer.rs, validator.rs, models.rs
-│   ├── db.rs, memory.rs, rules_engine.rs, schema.rs, sense.rs
-│   ├── sync.rs, task_delegator.rs, distiller.rs, markdown.rs
-│   └── bl1nk/ (generated)
-├── cli/src/main.rs     # 1188 lines
-├── server/             # TypeScript/Hono web
-├── model/engine/       # dead code (8KB, 44 files)
-└── craft.db            # SQLite DB
+CLI ──→ core (direct fn call, no IPC)
+API ──→ core (direct fn call)
+Sandbox ──→ external sandbox API (reqwest)
+
+no inter-crate FFI boundary — all in-process
 ```
-
-## ไฟล์หาย (Missing)
-- `mcp-server/` (Silver ยังไม่ scaffolf)
-- `storage.rs` (เพิ่ม unified adapter)
-- `policies/` (8 ไฟล์)
-- `docs/jules.md`, `docs/cookbook.md`, etc.
-
-## ลบทิ้ง (Dead Code)
-- `model/engine/` (44 files, ~8KB) ← directory
-- `core/src/models.rs` ← duplicate proto types
-- `core/src/validator.rs` ← ส่งให้ inline เข้า parser
-
-## แนวคิด migration (Phase 1-3)
-
-Phase 1 (foundation):
-- ลบ dead code ✅ mapped
-- create `storage.rs` (unified DB)
-- cipher search
-
-Phase 2 (Direct MCP):
-- scaffold `mcp-server/`
-- implement tools ที่ call core → latency <50ms (from 150ms)
-- deprecate แต่เก็บ `app/src/mcp.ts` เป็น fallback
-
-Phase 3 (polish):
-- remove craft crate
-- ด้าน policies, docs
-
----
 
 ## Performance Targets (future)
-- MCP latency <50ms (p99)
-- Binary size <15MB (release)
-- Startup <200ms
+- MCP latency < 50ms (p99)
+- Binary size < 15MB (release)
+- Startup < 200ms
 - integration tests 100%
 - no dead code detected
 
-**Source:** SPEC.md v3
+## Key Design Decisions
+1. **SQLite bundled** (rusqlite) — zero external DB setup
+2. **MySQL via sqlx** (feature flag) — for production deployments
+3. **No Python runtime** — pyo3 removed, skill distiller stubbed
+4. **JSON I/O** — all CLI commands emit JSON with `--json` flag
