@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Dependency Cleanup**: Removed `pyo3` dependency from workspace (root + core Cargo.toml), replacing Python-based skill distiller with a no-op stub — eliminates heavyweight CPython link-time dep for Android/Termux cross-compilation.
+- **Compile Fix**: Restored missing `anyhow::Result` import in `core/src/distiller.rs` after removing PyO3 import block stripped the anyhow re-export.
+
 ## [3.1.0] - 2026-06-10
 
 ### Added
