@@ -5,12 +5,12 @@
 Agent ต้องยึดถือเอกสารชุดนี้เป็นเข็มทิศในการทำงานเสมอ:
 - [**SPEC.md**](./SPEC.md): เป้าหมายและขอบเขตงาน (ห้ามทำเกินขอบเขตที่ระบุ)
 - [**PLAN.md**](./PLAN.md): ขั้นตอนการทำงาน (ห้ามข้าม Phase โดยไม่จำเป็น)
-- [**ARCHITECT.md**](./ARCHITECT.md): โครงสร้างระบบและโมดูล (ต้องเขียนโค้ดให้ตรงตาม Pattern นี้)
+- [**ARCHITECTURE.md**](./docs/ARCHITECTURE.md): โครงสร้างระบบและโมดูล (ต้องเขียนโค้ดให้ตรงตาม Pattern นี้)
 - [**TODO.md**](./TODO.md): สถานะงานรายวัน (ต้องอัปเดตทุกครั้งที่จบงาน)
 
 ## 🏗️ Monorepo Rules
-- **Single Source of Truth**: ใช้ Protobuf ใน `/schema` เป็นตัวกำหนด Interface เสมอ
-- **Rust First**: Logic หลักของ Rule Engine และ DB ต้องอยู่ที่ `/core` และ `/craft`
+- **Single Source of Truth**: ใช้ JSON Schema ใน `schema/` เป็นตัวกำหนด Interface เสมอ
+- **Rust First**: Logic หลักของ Rule Engine และ DB ต้องอยู่ที่ `core/`
 - **Zero Warnings Policy**: โค้ด Rust ต้องผ่าน `cargo clippy -- -D warnings` และ `cargo test` 100% ก่อนส่งงาน
 
 ## 🚨 Anti-Token Waste Protocol (MANDATORY)
@@ -21,5 +21,5 @@ Agent ต้องยึดถือเอกสารชุดนี้เป�
 4. **Context Efficiency**: ใช้ `grep_search` แทนการอ่านไฟล์ขนาดใหญ่ทั้งไฟล์
 
 ---
-*Updated on: 2024-05-19*
-*Reason: Update documentation hierarchy and monorepo standards.*
+*Updated on: 2026-07-25*
+*Reason: Fix stale references (ARCHITECT.md→ARCHITECTURE.md, Protobuf→JSON Schema, /craft→core).*
